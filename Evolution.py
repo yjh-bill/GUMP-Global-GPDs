@@ -17,6 +17,7 @@ import numpy as np
 import rundec
 from scipy.special import psi
 from typing import Tuple
+from numba import vectorize
 
 """
 ***********************QCD constants***************************************
@@ -56,10 +57,28 @@ B00 = 11./3. * CA
 B01 = -4./3. * TF
 
 def beta0(nf: int) -> float:
-    """ LO beta function of pQCD, will be used for LO GPD evolution. """
+    """ LO beta function of pQCD, will be used for LO GPD evolution. 
+
+    """
     return - B00 - B01 * nf
 
 def AlphaS(nloop: int, nf: int, Q: float) -> float:
+    """
+    Alpha strong with initial scale set by Z boson mass Mz and alpha strong there alphaS = Alpha_Mz.
+
+    Args:
+        nloop: number of pQCD loop (order) of alpha strong
+        nf: effective Fermion number
+        Q: final scale
+    
+    Returns:
+        single value of alphaS at final scale Q.
+
+    """
+    return rundec.CRunDec().AlphasExact(Alpha_Mz, Mz, Q, nf, nloop)
+
+@vectorize([float64(int32, int32, float64)])
+def AlphaS_vec(nloop: int, nf: int, Q: float) -> float:
     """
     Alpha strong with initial scale set by Z boson mass Mz and alpha strong there alphaS = Alpha_Mz.
 
@@ -133,6 +152,64 @@ def singlet_LO(n: complex, nf: int, p: int, prty: int = 1) -> np.ndarray:
                         [gq0, gg0]])
 
 
+def singlet_LO_vec(n: complex, nf: int, p: int, prty: int = 1) -> np.ndarray:
+    """
+    Singlet LO anomalous dimensions.
+
+    Args:
+        n (complex): which moment (= Mellin moment for integer n)
+        nf (int): number of active quark flavors
+        p (int): 1 for vector-like GPD (Ht, Et), -1 for axial-vector-like GPDs (Ht, Et)
+        prty (int): C parity, irrelevant at LO
+
+    Returns:
+        2x2 complex matrix ((QQ, QG),
+                            (GQ, GG))
+
+    Here, n and nf are scalars.
+    p is array of shape (N)
+    However, it will still work if nf and n are arrays of shape (N)
+    In short, this will work as long as n, nf, and p can be broadcasted together.
+
+    """
+
+    
+    if(p == 1):
+        qq0 = CF*(-3.0-2.0/(n*(1.0+n))+4.0*S1(n))
+        qg0 = (-4.0*nf*TF*(2.0+n+n*n))/(n*(1.0+n)*(2.0+n))
+        gq0 = (-2.0*CF*(2.0+n+n*n))/((-1.0+n)*n*(1.0+n))
+        gg0 = -4.0*CA*(1/((-1.0+n)*n)+1/((1.0+n)*(2.0+n))-S1(n)) -11*CA/3. + 4*nf*TF/3.
+
+        return np.array([[qq0, qg0],
+                        [gq0, gg0]])
+    
+    if(p == -1):
+        qq0 = CF*(-3.0-2.0/(n*(1.0+n))+4.0*S1(n))
+        qg0 = (-4.0*nf*TF*(-1.0+n))/(n*(1.0+n))
+        gq0 = (-2.0*CF*(2.0+n))/(n*(1.0+n))
+        gg0 = -4.0*CA*(2/(n*(1.0+n))-S1(n)) -11*CA/3. + 4*nf*TF/3.
+
+        return np.array([[qq0, qg0],
+                        [gq0, gg0]])
+
+    # Here, I am making the assumption that a is either 1 or -1
+    qq0 = np.where(p>0,  CF*(-3.0-2.0/(n*(1.0+n))+4.0*S1(n)),           CF*(-3.0-2.0/(n*(1.0+n))+4.0*S1(n)))
+    qg0 = np.where(p>0,  (-4.0*nf*TF*(2.0+n+n*n))/(n*(1.0+n)*(2.0+n)),  (-4.0*nf*TF*(-1.0+n))/(n*(1.0+n)) )
+    gq0 = np.where(p>0,  (-2.0*CF*(2.0+n+n*n))/((-1.0+n)*n*(1.0+n)),    (-2.0*CF*(2.0+n))/(n*(1.0+n)))
+    gg0 = np.where(p>0,  -4.0*CA*(1/((-1.0+n)*n)+1/((1.0+n)*(2.0+n))-S1(n)) -11*CA/3. + 4*nf*TF/3., \
+        -4.0*CA*(2/(n*(1.0+n))-S1(n)) -11*CA/3. + 4*nf*TF/3. )
+
+    # all of the four above have shape (N)
+    # more generally, if p is a multi dimensional array, like (N1, N1, N2)... Then this could also work
+
+    qq0_qg0 = np.stack((qq0, qg0), axis=-1)
+    qg0_gg0 = np.stack((gq0, gg0), axis=-1)
+
+    return np.stack((qq0_gg0, qg0_gg0), axis=-2)# (N, 2, 2)
+
+
+
+
 """
 ***********************Evolution operator of GPD in the moment space*******
 Refer to the evolution.py at https://github.com/kkumer/gepard. Modifications are made.
@@ -163,6 +240,36 @@ def lambdaf(n: complex, nf: int, p: int, prty: int = 1) -> np.ndarray:
     lam2 = lam1 + aux
     return np.stack([lam1, lam2])
 
+
+
+def lambdaf_vec(n: complex, nf: int, p: int, prty: int = 1) -> np.ndarray:
+    """
+    Eigenvalues of the LO singlet anomalous dimensions matrix.
+
+    Args:
+        n (complex): which moment (= Mellin moment for integer n)
+        nf (int): number of active quark flavors
+        p (int): 1 for vector-like GPD (Ht, Et), -1 for axial-vector-like GPDs (Ht, Et)
+        prty (int): 1 for NS^{+}, -1 for NS^{-}, irrelevant at LO
+
+    Returns:
+        lam[a, k]
+        a in [+, -] and k is MB contour point index
+
+    Normally, n and nf should be scalars. p should be (N)
+    More generally, as long as they can be broadcasted, any shape is OK.
+
+    """
+    # To avoid crossing of the square root cut on the
+    # negative real axis we use trick by Dieter Mueller
+    gam0 = singlet_LO_vec(n, nf, p, prty) # (N, 2, 2)
+    aux = ((gam0[..., 0, 0] - gam0[..., 1, 1]) *
+           np.sqrt(1. + 4.0 * gam0[..., 0, 1] * gam0[..., 1, 0] /
+                   (gam0[..., 0, 0] - gam0[..., 1, 1])**2)) # (N)
+    lam1 = 0.5 * (gam0[..., 0, 0] + gam0[..., 1, 1] - aux) # (N)
+    lam2 = lam1 + aux  # (N)
+    return np.stack([lam1, lam2], axis=-1) # shape (N, 2)
+
 def projectors(n: complex, nf: int, p: int, prty: int = 1) -> Tuple[np.ndarray, np.ndarray]:
     """
     Projectors on evolution quark-gluon singlet eigenaxes.
@@ -192,6 +299,43 @@ def projectors(n: complex, nf: int, p: int, prty: int = 1) -> Tuple[np.ndarray, 
     # We insert a-axis before i,j-axes, i.e. on -3rd place
     pr = np.stack([prp, prm], axis=-3)
     return lam, pr
+
+
+
+#TODO
+def projectors_vec(n: complex, nf: int, p: int, prty: int = 1) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Projectors on evolution quark-gluon singlet eigenaxes.
+
+    Args:
+        n (complex): which moment (= Mellin moment for integer n)
+        nf (int): number of active quark flavors
+        p (int): 1 for vector-like GPD (Ht, Et), -1 for axial-vector-like GPDs (Ht, Et)
+        prty (int): 1 for NS^{+}, -1 for NS^{-}, irrelevant at LO
+
+    Returns:
+         lam: eigenvalues of LO an. dimm matrix lam[a, k]  # Eq. (123)
+          pr: Projector pr[k, a, i, j]  # Eq. (122)
+               k is MB contour point index
+               a in [+, -]
+               i,j in {Q, G}
+
+    n and nf will be scalars
+    p will be shape (N)
+    prty should be scalar (but maybe I can make it work with shape N)
+
+    """
+    gam0 = singlet_LO(n, nf, p, prty)    # (N, 2, 2)
+    lam = lambdaf(n, nf, p, prty)        # (N, 2)
+    den = 1. / (lam[..., 0] - lam[..., 1]) #(N)
+    # P+ and P-
+    ssm = gam0 - np.einsum('...,ij->...ij', lam[..., 1], np.identity(2)) #(N, 2, 2)
+    ssp = gam0 - np.einsum('...,ij->...ij', lam[..., 0], np.identity(2)) #(N, 2, 2)
+    prp = np.einsum('...,...ij->...ij', den, ssm) # (N, 2, 2)
+    prm = np.einsum('...,...ij->...ij', -den, ssp) # (N, 2, 2)
+    # We insert a-axis before i,j-axes, i.e. on -3rd place
+    pr = np.stack([prp, prm], axis=-3) # (N, 2, 2, 2)
+    return lam, pr # (N, 2) and (N, 2, 2, 2)
 
 def evolop(j: complex, nf: int, p: int, Q: float):
     """
@@ -237,6 +381,56 @@ def evolop(j: complex, nf: int, p: int, Q: float):
 
     return [evola0NS, evola0]
 
+
+def evolop_vec(j: complex, nf: int, p: int, Q: float):
+    """
+    GPD evolution operator E(j, nf, Q)[a,b].
+
+    Args:
+         j: MB contour points (Note: n = j + 1 !!)
+         nf: number of effective fermion
+         p (int): 1 for vector-like GPD (Ht, Et), -1 for axial-vector-like GPDs (Ht, Et)
+         Q: final scale of evolution 
+
+    Returns:
+         Evolution operator E(j, nf, Q)[a,b] at given j nf and Q as 3-by-3 matrix
+         - a and b are in the flavor space (non-singlet, singlet, gluon)
+
+    In original evolop function, j, nf, p, and Q are all scalars.
+    Here, j and nf will be scalars.
+    p and Q will have shape (N)
+
+    """
+    #Alpha-strong ratio.
+    R = AlphaS_vec(nloop_alphaS, nf, Q)/AlphaS(nloop_alphaS, nf, Init_Scale_Q) # shape N
+
+    #LO singlet anomalous dimensions and projectors
+    lam, pr = projectors(j+1, nf, p)    # (N, 2) (N, 2, 2, 2)
+
+    #LO pQCD beta function of GPD evolution
+    b0 = beta0(nf) # scalar
+
+    #Singlet LO evolution factor (alpha(mu)/alpha(mu0))^(-gamma/beta0) in (+,-) space
+    Rfact = R[..., np.newaxis]**(-lam/b0) # (N, 2)     
+
+    #Singlet LO evolution matrix in (u+d, g) space
+    """
+    # The Gepard code by K. Kumericki reads:
+    evola0ab = np.einsum('kaij,ab->kabij', pr,  np.identity(2))
+    evola0 = np.einsum('kabij,bk->kij', evola0ab, Rfact)
+    # We use instead
+    """ 
+    evola0 = np.einsum('...aij,...a->...ij', pr, Rfact) # (N, 2, 2)
+
+    #Non-singlet LO anomalous dimension
+    gam0NS = non_singlet_LO(j+1, nf, p) #this function is already numpy compatible
+    # shape (N)
+
+    #Non-singlet evolution factor 
+    evola0NS = R**(-gam0NS/b0) #(N)
+
+    return [evola0NS, evola0] # (N) and (N, 2, 2)
+
 def Moment_Evo(j: complex, nf: int, p: int, Q: float, ConfFlav: np.array) -> np.array:
     """
     Evolution of moments in the flavor space 
@@ -271,4 +465,49 @@ def Moment_Evo(j: complex, nf: int, p: int, Q: float, ConfFlav: np.array) -> np.
     # Inverse transform the evolved moments back to the flavor basis
     EvoConfFlav = np.einsum('...j,j', inv_flav_trans, EvoConf)
     
+    return EvoConfFlav
+
+
+def Moment_Evo_vec(j: complex, nf: int, p: int, Q: float, ConfFlav: np.array) -> np.array:
+    """
+    Evolution of moments in the flavor space 
+
+    Args:
+        uneolved conformal moments in flavor space ConfFlav = [ConfMoment_uV, ConfMoment_ubar, ConfMoment_dV, ConfMoment_dbar, ConfMoment_g] 
+        j: conformal spin j (conformal spin is actually j+2 but anyway): scalar
+        t: momentum transfer squared
+        nf: number of effective fermions; 
+        p (int): 1 for vector-like GPD (Ht, Et), -1 for axial-vector-like GPDs (Ht, Et): array (N,)
+        Q: final evolution scale: array(N,)
+
+    Returns:
+        Evolved conformal moments in flavor space (non-singlet, singlet, gluon)
+
+        return shape (N, 5)
+    """
+
+    # flavor_trans (5, 5) ConfFlav (N, 5)
+
+    # Transform the unevolved moments to evolution basis
+    # ConfEvoBasis = np.einsum('...j,j', flav_trans, ConfFlav) # originally, output will be (5), I want it to be (N, 5)
+    ConfEvoBasis = np.einsum('ij, ...j->...i', flav_trans, ConfFlav) # shape (N, 5)
+
+
+    # Taking the non-singlet and singlet parts of the conformal moments
+    ConfNS = ConfEvoBasis[..., :3] # (N, 3)
+    ConfS = ConfEvoBasis[..., -2:] # (N, 2)
+
+    # Calling evolution mulitiplier
+    [evons, evoa] = evolop_vec(j, nf, p, Q) # (N) and (N, 2, 2)
+
+    # non-singlet part evolves multiplicatively
+    EvoConfNS = evons[..., np.newaxis] * ConfNS # (N, 3)
+    # singlet part mixes with the gluon
+    EvoConfS = np.einsum('...ij, ...j->...i', evoa, ConfS) # (N, 2)
+
+    # Recombing the non-singlet and singlet parts
+    EvoConf = np.concatenate((EvoConfNS, EvoConfS), axis=-1) # (N, 5)
+    # Inverse transform the evolved moments back to the flavor basis
+    EvoConfFlav = np.einsum('...ij, ...j->...i', inv_flav_trans, EvoConf) #(N, 5)
+
     return EvoConfFlav
