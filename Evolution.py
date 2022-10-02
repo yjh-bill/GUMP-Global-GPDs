@@ -17,6 +17,7 @@ import numpy as np
 import rundec
 from scipy.special import psi
 from typing import Tuple
+import numba
 from numba import vectorize
 
 """
@@ -77,7 +78,7 @@ def AlphaS(nloop: int, nf: int, Q: float) -> float:
     """
     return rundec.CRunDec().AlphasExact(Alpha_Mz, Mz, Q, nf, nloop)
 
-@vectorize([float64(int32, int32, float64)])
+@vectorize([numba.float64(numba.int32, numba.int32, numba.float64)], forceobj=True)
 def AlphaS_vec(nloop: int, nf: int, Q: float) -> float:
     """
     Alpha strong with initial scale set by Z boson mass Mz and alpha strong there alphaS = Alpha_Mz.
@@ -173,7 +174,7 @@ def singlet_LO_vec(n: complex, nf: int, p: int, prty: int = 1) -> np.ndarray:
 
     """
 
-    
+    '''
     if(p == 1):
         qq0 = CF*(-3.0-2.0/(n*(1.0+n))+4.0*S1(n))
         qg0 = (-4.0*nf*TF*(2.0+n+n*n))/(n*(1.0+n)*(2.0+n))
@@ -191,6 +192,7 @@ def singlet_LO_vec(n: complex, nf: int, p: int, prty: int = 1) -> np.ndarray:
 
         return np.array([[qq0, qg0],
                         [gq0, gg0]])
+    '''
 
     # Here, I am making the assumption that a is either 1 or -1
     qq0 = np.where(p>0,  CF*(-3.0-2.0/(n*(1.0+n))+4.0*S1(n)),           CF*(-3.0-2.0/(n*(1.0+n))+4.0*S1(n)))
@@ -203,9 +205,9 @@ def singlet_LO_vec(n: complex, nf: int, p: int, prty: int = 1) -> np.ndarray:
     # more generally, if p is a multi dimensional array, like (N1, N1, N2)... Then this could also work
 
     qq0_qg0 = np.stack((qq0, qg0), axis=-1)
-    qg0_gg0 = np.stack((gq0, gg0), axis=-1)
+    gq0_gg0 = np.stack((gq0, gg0), axis=-1)
 
-    return np.stack((qq0_gg0, qg0_gg0), axis=-2)# (N, 2, 2)
+    return np.stack((qq0_qg0, gq0_gg0), axis=-2)# (N, 2, 2)
 
 
 
@@ -325,8 +327,8 @@ def projectors_vec(n: complex, nf: int, p: int, prty: int = 1) -> Tuple[np.ndarr
     prty should be scalar (but maybe I can make it work with shape N)
 
     """
-    gam0 = singlet_LO(n, nf, p, prty)    # (N, 2, 2)
-    lam = lambdaf(n, nf, p, prty)        # (N, 2)
+    gam0 = singlet_LO_vec(n, nf, p, prty)    # (N, 2, 2)
+    lam = lambdaf_vec(n, nf, p, prty)        # (N, 2)
     den = 1. / (lam[..., 0] - lam[..., 1]) #(N)
     # P+ and P-
     ssm = gam0 - np.einsum('...,ij->...ij', lam[..., 1], np.identity(2)) #(N, 2, 2)
@@ -403,9 +405,10 @@ def evolop_vec(j: complex, nf: int, p: int, Q: float):
     """
     #Alpha-strong ratio.
     R = AlphaS_vec(nloop_alphaS, nf, Q)/AlphaS(nloop_alphaS, nf, Init_Scale_Q) # shape N
+    R = np.array(R)
 
     #LO singlet anomalous dimensions and projectors
-    lam, pr = projectors(j+1, nf, p)    # (N, 2) (N, 2, 2, 2)
+    lam, pr = projectors_vec(j+1, nf, p)    # (N, 2) (N, 2, 2, 2)
 
     #LO pQCD beta function of GPD evolution
     b0 = beta0(nf) # scalar

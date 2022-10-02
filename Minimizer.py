@@ -1,5 +1,5 @@
 from Parameters import ParaManager_Unp, ParaManager_Pol
-from Observables import GPDobserv
+from Observables import GPDobserv, GPDobserv_vec
 from DVCS_xsec import dsigma_TOT, M
 from multiprocessing import Pool
 from functools import partial
@@ -52,7 +52,60 @@ def PDF_theo(PDF_input: np.array, Para: np.array):
 
     Para_spe = Para[spe]
     PDF_theo = GPDobserv(x, xi, t, Q, p)
-    return PDF_theo.tPDF(flv, Para_spe)     
+    return PDF_theo.tPDF(flv, Para_spe)   
+
+def PDF_theo_vec(PDF_input: pd.DataFrame, Para: np.array):
+    # [x, t, Q, f, delta_f, spe, flv] = PDF_input
+    xs = PDF_input['x']
+    ts = PDF_input['t']
+    Qs = PDF_input['Q']
+    flvs = PDF_input['flv']
+    spes = PDF_input['spe']
+ 
+
+    xi = 0
+
+    ps = np.where(spe<=1, 1, -1)
+
+    '''
+    if(spe == 0 or spe == 1):
+        p=1
+
+    if(spe == 2 or spe == 3):
+        p=-1
+    '''
+    # Para: (4, 2, 5, 1, 4)
+
+    Para_spe = Para[spes] # fancy indexing. Output (N, 2, 5, 1, 4)
+    PDF_theo = GPDobserv_vec(xs, xi, ts, Qs, ps)
+    return PDF_theo.tPDF(flvs, Para_spe)  # array length N
+
+def PDF_theo_vec_v2(PDF_input: pd.DataFrame, Para: np.array): # another version
+    # [x, t, Q, f, delta_f, spe, flv] = PDF_input
+    xs = PDF_input['x']
+    ts = PDF_input['t']
+    Qs = PDF_input['Q']
+    flvs = PDF_input['flv']
+    spes = PDF_input['spe']
+ 
+
+    xi = 0
+
+    ps = np.where(spes<=1, 1, -1)
+    spes = spes%2
+
+    '''
+    if(spe == 0 or spe == 1):
+        spe, p = spe, 1
+
+    if(spe == 2 or spe == 3):
+        spe, p = spe - 2 , -1
+    '''
+    # Para: (2, 2, 5, 1, 4)
+
+    Para_spe = Para[spes] # fancy indexing. Output (N, 2, 5, 1, 4)
+    PDF_theo = GPDobserv_vec(xs, xi, ts, Qs, ps)
+    return PDF_theo.tPDF(flvs, Para_spe)  # array length N
 
 def tPDF_theo(tPDF_input: np.array, Para: np.array):
     [x, t, Q, f, delta_f, spe, flv] = tPDF_input
@@ -512,7 +565,7 @@ def forward_Et_fit(Paralst_Pol):
 
     return fit_forw_Et
 
-"""
+
 def cost_GUMP(Norm_HuV,    alpha_HuV,    beta_HuV,    alphap_HuV, 
               Norm_Hubar,  alpha_Hubar,  beta_Hubar,  alphap_Hqbar,
               Norm_HdV,    alpha_HdV,    beta_HdV,    alphap_HdV,
@@ -569,6 +622,7 @@ def cost_GUMP(Norm_HuV,    alpha_HuV,    beta_HuV,    alphap_HuV,
 
     return  cost_PDF + cost_tPDF + cost_GFF #+ cost_DVCSxsec
 
+"""
 def set_GUMP():
     fit = Minuit(cost_GUMP, Norm_HuV = 4.1,    alpha_HuV = 0.3,     beta_HuV = 3.0,    alphap_HuV = 1.1, 
                             Norm_Hubar = 0.2,  alpha_Hubar = 1.1,   beta_Hubar = 7.6,  alphap_Hqbar = 0.15,
