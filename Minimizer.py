@@ -8,6 +8,7 @@ from iminuit import Minuit
 import numpy as np
 import pandas as pd
 import time
+import csv
 
 Minuit_Counter = 0
 
@@ -29,11 +30,17 @@ tPDF_data_E  = tPDF_data[tPDF_data['spe'] == 1]
 tPDF_data_Ht = tPDF_data[tPDF_data['spe'] == 2]
 tPDF_data_Et = tPDF_data[tPDF_data['spe'] == 3]
 
-GFF_data = pd.read_csv('GUMPDATA/GFFdata.csv',       header = None, names = ['j', 't', 'Q', 'f', 'delta f', 'spe', 'flv'],        dtype = {'j': int, 't': float, 'Q': float, 'f': float, 'delta f': float,'spe': int, 'flv': str})
+GFF_data = pd.read_csv('GUMPDATA/GFFdata_Quark.csv',       header = None, names = ['j', 't', 'Q', 'f', 'delta f', 'spe', 'flv'],        dtype = {'j': int, 't': float, 'Q': float, 'f': float, 'delta f': float,'spe': int, 'flv': str})
 GFF_data_H  = GFF_data[GFF_data['spe'] == 0]
 GFF_data_E  = GFF_data[GFF_data['spe'] == 1]
 GFF_data_Ht = GFF_data[GFF_data['spe'] == 2]
 GFF_data_Et = GFF_data[GFF_data['spe'] == 3]
+
+GFF_Gluon_data = pd.read_csv('GUMPDATA/GFFdata_Gluon.csv',       header = None, names = ['j', 't', 'Q', 'f', 'delta f', 'spe', 'flv'],        dtype = {'j': int, 't': float, 'Q': float, 'f': float, 'delta f': float,'spe': int, 'flv': str})
+GFF_Gluon_data_H  = GFF_Gluon_data[GFF_Gluon_data['spe'] == 0]
+GFF_Gluon_data_E  = GFF_Gluon_data[GFF_Gluon_data['spe'] == 1]
+GFF_Gluon_data_Ht = GFF_Gluon_data[GFF_Gluon_data['spe'] == 2]
+GFF_Gluon_data_Et = GFF_Gluon_data[GFF_Gluon_data['spe'] == 3]
 
 DVCSxsec_data = pd.read_csv('GUMPDATA/DVCSxsec.csv', header = None, names = ['y', 'xB', 't', 'Q', 'phi', 'f', 'delta f', 'pol'] , dtype = {'y': float, 'xB': float, 't': float, 'Q': float, 'phi': float, 'f': float, 'delta f': float, 'pol': str})
 DVCSxsec_data_invalid = DVCSxsec_data[DVCSxsec_data['t']*(DVCSxsec_data['xB']-1) - M ** 2 * DVCSxsec_data['xB'] ** 2 < 0]
@@ -153,8 +160,8 @@ def GFF_theo(GFF_input: np.array, Para):
     js = GFF_input['j'].to_numpy()
     ts = GFF_input['t'].to_numpy()
     Qs = GFF_input['Q'].to_numpy()
-    fs = GFF_input['f'].to_numpy()
-    delta_fs = GFF_input['delta f'].to_numpy()
+    #fs = GFF_input['f'].to_numpy()
+    #delta_fs = GFF_input['delta f'].to_numpy()
     flvs = GFF_input['flv'].to_numpy()
     spes = GFF_input['spe'].to_numpy()
     x = 0
@@ -225,7 +232,7 @@ def DVCSxsec_theo(DVCSxsec_input: pd.DataFrame, CFF_input: np.array):
     t = DVCSxsec_input['t'].to_numpy()
     Q = DVCSxsec_input['Q'].to_numpy()
     phi = DVCSxsec_input['phi'].to_numpy()
-    f = DVCSxsec_input['f'].to_numpy()
+    #f = DVCSxsec_input['f'].to_numpy()
     pol = DVCSxsec_input['pol'].to_numpy()
 
     [HCFF, ECFF, HtCFF, EtCFF] = CFF_input # each of them have shape (N); scalar is also OK if we use 
@@ -244,8 +251,8 @@ def DVCSxsec_HERA_theo(DVCSxsec_data_HERA: pd.DataFrame, Para_Unp, Para_Pol):
     xB = DVCSxsec_data_HERA['xB'].to_numpy()
     t = DVCSxsec_data_HERA['t'].to_numpy()
     Q = DVCSxsec_data_HERA['Q'].to_numpy()
-    f = DVCSxsec_data_HERA['f'].to_numpy()
-    delta_f = DVCSxsec_data_HERA['delta f'].to_numpy()
+    #f = DVCSxsec_data_HERA['f'].to_numpy()
+    #delta_f = DVCSxsec_data_HERA['delta f'].to_numpy()
     pol = DVCSxsec_data_HERA['pol'].to_numpy()
 
     [HCFF, ECFF, HtCFF, EtCFF] = CFF_theo(xB, t, Q, np.expand_dims(Para_Unp, axis=0), np.expand_dims(Para_Pol, axis=0))
@@ -299,21 +306,10 @@ def cost_forward_H(Norm_HuV,    alpha_HuV,    beta_HuV,    alphap_HuV,
                    Norm_Hdbar,  alpha_Hdbar,  beta_Hdbar, 
                    Norm_Hg,     alpha_Hg,     beta_Hg,     alphap_Hg,
                    Norm_EuV,    alpha_EuV,    beta_EuV,    alphap_EuV,
-                   Norm_EdV,    alpha_EdV,    beta_EdV,    alphap_EdV,
-                   R_E_Sea,     R_Hu_xi2,     R_Hd_xi2,    R_Hg_xi2,
+                   Norm_EdV,    R_E_Sea,      R_Hu_xi2,    R_Hd_xi2,    R_Hg_xi2,
                    R_Eu_xi2,    R_Ed_xi2,     R_Eg_xi2,
                    R_Hu_xi4,    R_Hd_xi4,     R_Hg_xi4,
                    R_Eu_xi4,    R_Ed_xi4,     R_Eg_xi4,    bexp_HSea):
-
-    global Minuit_Counter, Time_Counter
-
-    time_now = time.time() - time_start
-    
-    if(time_now > Time_Counter * 600):
-        print('Runing Time:',round(time_now/60),'minutes. Cost function called total', Minuit_Counter, 'times.')
-        Time_Counter = Time_Counter + 1
-    
-    Minuit_Counter = Minuit_Counter + 1
 
     Paralst = [Norm_HuV,    alpha_HuV,    beta_HuV,    alphap_HuV, 
                Norm_Hubar,  alpha_Hubar,  beta_Hubar,  alphap_Hqbar,
@@ -321,8 +317,7 @@ def cost_forward_H(Norm_HuV,    alpha_HuV,    beta_HuV,    alphap_HuV,
                Norm_Hdbar,  alpha_Hdbar,  beta_Hdbar, 
                Norm_Hg,     alpha_Hg,     beta_Hg,     alphap_Hg,
                Norm_EuV,    alpha_EuV,    beta_EuV,    alphap_EuV,
-               Norm_EdV,    alpha_EdV,    beta_EdV,    alphap_EdV,
-               R_E_Sea,     R_Hu_xi2,     R_Hd_xi2,    R_Hg_xi2,
+               Norm_EdV,    R_E_Sea,      R_Hu_xi2,    R_Hd_xi2,    R_Hg_xi2,
                R_Eu_xi2,    R_Ed_xi2,     R_Eg_xi2,
                R_Hu_xi4,    R_Hd_xi4,     R_Hg_xi4,
                R_Eu_xi4,    R_Ed_xi4,     R_Eg_xi4,    bexp_HSea]
@@ -348,21 +343,10 @@ def cost_forward_E(Norm_HuV,    alpha_HuV,    beta_HuV,    alphap_HuV,
                    Norm_Hdbar,  alpha_Hdbar,  beta_Hdbar, 
                    Norm_Hg,     alpha_Hg,     beta_Hg,     alphap_Hg,
                    Norm_EuV,    alpha_EuV,    beta_EuV,    alphap_EuV,
-                   Norm_EdV,    alpha_EdV,    beta_EdV,    alphap_EdV,
-                   R_E_Sea,     R_Hu_xi2,     R_Hd_xi2,    R_Hg_xi2,
+                   Norm_EdV,    R_E_Sea,      R_Hu_xi2,    R_Hd_xi2,    R_Hg_xi2,
                    R_Eu_xi2,    R_Ed_xi2,     R_Eg_xi2,
                    R_Hu_xi4,    R_Hd_xi4,     R_Hg_xi4,
                    R_Eu_xi4,    R_Ed_xi4,     R_Eg_xi4,    bexp_HSea):
-
-    global Minuit_Counter, Time_Counter
-
-    time_now = time.time() - time_start
-    
-    if(time_now > Time_Counter * 600):
-        print('Runing Time:',round(time_now/60),'minutes. Cost function called total', Minuit_Counter, 'times.')
-        Time_Counter = Time_Counter + 1
-    
-    Minuit_Counter = Minuit_Counter + 1
 
     Paralst = [Norm_HuV,    alpha_HuV,    beta_HuV,    alphap_HuV, 
                Norm_Hubar,  alpha_Hubar,  beta_Hubar,  alphap_Hqbar,
@@ -370,8 +354,7 @@ def cost_forward_E(Norm_HuV,    alpha_HuV,    beta_HuV,    alphap_HuV,
                Norm_Hdbar,  alpha_Hdbar,  beta_Hdbar, 
                Norm_Hg,     alpha_Hg,     beta_Hg,     alphap_Hg,
                Norm_EuV,    alpha_EuV,    beta_EuV,    alphap_EuV,
-               Norm_EdV,    alpha_EdV,    beta_EdV,    alphap_EdV,
-               R_E_Sea,     R_Hu_xi2,     R_Hd_xi2,    R_Hg_xi2,
+               Norm_EdV,    R_E_Sea,      R_Hu_xi2,    R_Hd_xi2,    R_Hg_xi2,
                R_Eu_xi2,    R_Ed_xi2,     R_Eg_xi2,
                R_Hu_xi4,    R_Hd_xi4,     R_Hg_xi4,
                R_Eu_xi4,    R_Ed_xi4,     R_Eg_xi4,    bexp_HSea]
@@ -399,8 +382,7 @@ def forward_H_fit(Paralst_Unp):
      Norm_Hdbar_Init,  alpha_Hdbar_Init,  beta_Hdbar_Init, 
      Norm_Hg_Init,     alpha_Hg_Init,     beta_Hg_Init,     alphap_Hg_Init,
      Norm_EuV_Init,    alpha_EuV_Init,    beta_EuV_Init,    alphap_EuV_Init,
-     Norm_EdV_Init,    alpha_EdV_Init,    beta_EdV_Init,    alphap_EdV_Init,
-     R_E_Sea_Init,     R_Hu_xi2_Init,     R_Hd_xi2_Init,    R_Hg_xi2_Init,
+     Norm_EdV_Init,    R_E_Sea_Init,      R_Hu_xi2_Init,    R_Hd_xi2_Init,    R_Hg_xi2_Init,
      R_Eu_xi2_Init,    R_Ed_xi2_Init,     R_Eg_xi2_Init,
      R_Hu_xi4_Init,    R_Hd_xi4_Init,     R_Hg_xi4_Init,
      R_Eu_xi4_Init,    R_Ed_xi4_Init,     R_Eg_xi4_Init,    bexp_HSea_Init] = Paralst_Unp
@@ -411,8 +393,7 @@ def forward_H_fit(Paralst_Unp):
                                         Norm_Hdbar = Norm_Hdbar_Init, alpha_Hdbar = alpha_Hdbar_Init,  beta_Hdbar = beta_Hdbar_Init, 
                                         Norm_Hg = Norm_Hg_Init,       alpha_Hg = alpha_Hg_Init,        beta_Hg = beta_Hg_Init,       alphap_Hg = alphap_Hg_Init,
                                         Norm_EuV = Norm_EuV_Init,     alpha_EuV = alpha_EuV_Init,      beta_EuV = beta_EuV_Init,     alphap_EuV = alphap_EuV_Init, 
-                                        Norm_EdV = Norm_EdV_Init,     alpha_EdV = alpha_EdV_Init,      beta_EdV = beta_EdV_Init,     alphap_EdV = alphap_EdV_Init,
-                                        R_E_Sea = R_E_Sea_Init,       R_Hu_xi2 = R_Hu_xi2_Init,        R_Hd_xi2 = R_Hd_xi2_Init,     R_Hg_xi2 = R_Hg_xi2_Init,
+                                        Norm_EdV = Norm_EdV_Init,     R_E_Sea = R_E_Sea_Init,          R_Hu_xi2 = R_Hu_xi2_Init,     R_Hd_xi2 = R_Hd_xi2_Init,     R_Hg_xi2 = R_Hg_xi2_Init,
                                         R_Eu_xi2 = R_Eu_xi2_Init,     R_Ed_xi2 = R_Ed_xi2_Init,        R_Eg_xi2 = R_Eg_xi2_Init,
                                         R_Hu_xi4 = R_Hu_xi4_Init,     R_Hd_xi4 = R_Hd_xi4_Init,        R_Hg_xi4 = R_Hg_xi4_Init,
                                         R_Eu_xi4 = R_Eu_xi4_Init,     R_Ed_xi4 = R_Ed_xi4_Init,        R_Eg_xi4 = R_Eg_xi4_Init,     bexp_HSea = bexp_HSea_Init)
@@ -424,7 +405,6 @@ def forward_H_fit(Paralst_Unp):
     fit_forw_H.limits['alpha_Hdbar'] = (-2, 1.2)
     fit_forw_H.limits['alpha_Hg'] = (-2, 1.2)
     fit_forw_H.limits['alpha_EuV'] = (-2, 1.2)
-    fit_forw_H.limits['alpha_EdV'] = (-2, 1.2)
 
     fit_forw_H.limits['beta_HuV'] = (0, 15)
     fit_forw_H.limits['beta_Hubar'] = (0, 15)
@@ -432,9 +412,9 @@ def forward_H_fit(Paralst_Unp):
     fit_forw_H.limits['beta_Hdbar'] = (0, 15)
     fit_forw_H.limits['beta_Hg'] = (0, 15)    
     fit_forw_H.limits['beta_EuV'] = (0, 15)
-    fit_forw_H.limits['beta_EdV'] = (0, 15)
 
     fit_forw_H.fixed['alphap_Hqbar'] = True
+    fit_forw_H.fixed['alphap_Hg'] = True
 
     fit_forw_H.fixed['Norm_EuV'] = True
     fit_forw_H.fixed['alpha_EuV'] = True
@@ -442,9 +422,6 @@ def forward_H_fit(Paralst_Unp):
     fit_forw_H.fixed['alphap_EuV'] = True
 
     fit_forw_H.fixed['Norm_EdV'] = True
-    fit_forw_H.fixed['alpha_EdV'] = True
-    fit_forw_H.fixed['beta_EdV'] = True
-    fit_forw_H.fixed['alphap_EdV'] = True
 
     fit_forw_H.fixed['R_E_Sea'] = True
     fit_forw_H.fixed['R_Hu_xi2'] = True
@@ -463,9 +440,7 @@ def forward_H_fit(Paralst_Unp):
 
     fit_forw_H.fixed['bexp_HSea'] = True
 
-    global Minuit_Counter, Time_Counter, time_start
-    Minuit_Counter = 0
-    Time_Counter = 1
+    global time_start
     time_start = time.time()
 
     fit_forw_H.migrad()
@@ -476,13 +451,18 @@ def forward_H_fit(Paralst_Unp):
     time_end = time.time() -time_start
 
     with open('GUMP_Output/H_forward_fit.txt', 'w') as f:
-        print('Total running time: %3.1f minutes. Total call of cost function: %3d.\n' % ( time_end/60, fit_forw_H.nfcn), file=f)
-        print('The chi squared/d.o.f. is: %3.1f / %3d ( = %3.1f ).\n' % (fit_forw_H.fval, ndof_H, fit_forw_H.fval/ndof_H), file = f)
+        print('Total running time: %.1f minutes. Total call of cost function: %3d.\n' % ( time_end/60, fit_forw_H.nfcn), file=f)
+        print('The chi squared/d.o.f. is: %.2f / %3d ( = %.2f ).\n' % (fit_forw_H.fval, ndof_H, fit_forw_H.fval/ndof_H), file = f)
         print('Below are the final output parameters from iMinuit:', file = f)
         print(*fit_forw_H.values, sep=", ", file = f)
         print(*fit_forw_H.errors, sep=", ", file = f)
         print(fit_forw_H.params, file = f)
 
+    with open("GUMP_Output/H_forward_cov.csv","w",newline='') as my_csv:
+        csvWriter = csv.writer(my_csv,delimiter=',')
+        csvWriter.writerows([*fit_forw_H.covariance])
+
+    print("H fit finished...")
     return fit_forw_H
 
 def forward_E_fit(Paralst_Unp):
@@ -493,8 +473,7 @@ def forward_E_fit(Paralst_Unp):
      Norm_Hdbar_Init,  alpha_Hdbar_Init,  beta_Hdbar_Init, 
      Norm_Hg_Init,     alpha_Hg_Init,     beta_Hg_Init,     alphap_Hg_Init,
      Norm_EuV_Init,    alpha_EuV_Init,    beta_EuV_Init,    alphap_EuV_Init,
-     Norm_EdV_Init,    alpha_EdV_Init,    beta_EdV_Init,    alphap_EdV_Init,
-     R_E_Sea_Init,     R_Hu_xi2_Init,     R_Hd_xi2_Init,    R_Hg_xi2_Init,
+     Norm_EdV_Init,    R_E_Sea_Init,      R_Hu_xi2_Init,    R_Hd_xi2_Init,    R_Hg_xi2_Init,
      R_Eu_xi2_Init,    R_Ed_xi2_Init,     R_Eg_xi2_Init,
      R_Hu_xi4_Init,    R_Hd_xi4_Init,     R_Hg_xi4_Init,
      R_Eu_xi4_Init,    R_Ed_xi4_Init,     R_Eg_xi4_Init,    bexp_HSea_Init] = Paralst_Unp
@@ -505,8 +484,7 @@ def forward_E_fit(Paralst_Unp):
                                         Norm_Hdbar = Norm_Hdbar_Init, alpha_Hdbar = alpha_Hdbar_Init,  beta_Hdbar = beta_Hdbar_Init, 
                                         Norm_Hg = Norm_Hg_Init,       alpha_Hg = alpha_Hg_Init,        beta_Hg = beta_Hg_Init,       alphap_Hg = alphap_Hg_Init,
                                         Norm_EuV = Norm_EuV_Init,     alpha_EuV = alpha_EuV_Init,      beta_EuV = beta_EuV_Init,     alphap_EuV = alphap_EuV_Init, 
-                                        Norm_EdV = Norm_EdV_Init,     alpha_EdV = alpha_EdV_Init,      beta_EdV = beta_EdV_Init,     alphap_EdV = alphap_EdV_Init,
-                                        R_E_Sea = R_E_Sea_Init,       R_Hu_xi2 = R_Hu_xi2_Init,        R_Hd_xi2 = R_Hd_xi2_Init,     R_Hg_xi2 = R_Hg_xi2_Init,
+                                        Norm_EdV = Norm_EdV_Init,     R_E_Sea = R_E_Sea_Init,          R_Hu_xi2 = R_Hu_xi2_Init,     R_Hd_xi2 = R_Hd_xi2_Init,     R_Hg_xi2 = R_Hg_xi2_Init,
                                         R_Eu_xi2 = R_Eu_xi2_Init,     R_Ed_xi2 = R_Ed_xi2_Init,        R_Eg_xi2 = R_Eg_xi2_Init,
                                         R_Hu_xi4 = R_Hu_xi4_Init,     R_Hd_xi4 = R_Hd_xi4_Init,        R_Hg_xi4 = R_Hg_xi4_Init,
                                         R_Eu_xi4 = R_Eu_xi4_Init,     R_Ed_xi4 = R_Ed_xi4_Init,        R_Eg_xi4 = R_Eg_xi4_Init,     bexp_HSea = bexp_HSea_Init)
@@ -518,7 +496,6 @@ def forward_E_fit(Paralst_Unp):
     fit_forw_E.limits['alpha_Hdbar'] = (-2, 1.2)
     fit_forw_E.limits['alpha_Hg'] = (-2, 1.2)
     fit_forw_E.limits['alpha_EuV'] = (-2, 1.2)
-    fit_forw_E.limits['alpha_EdV'] = (-2, 1.2)
 
     fit_forw_E.limits['beta_HuV'] = (0, 15)
     fit_forw_E.limits['beta_Hubar'] = (0, 15)
@@ -526,7 +503,6 @@ def forward_E_fit(Paralst_Unp):
     fit_forw_E.limits['beta_Hdbar'] = (0, 15)
     fit_forw_E.limits['beta_Hg'] = (0, 15)    
     fit_forw_E.limits['beta_EuV'] = (0, 15)
-    fit_forw_E.limits['beta_EdV'] = (0, 15)
 
     fit_forw_E.fixed['Norm_HuV'] = True
     fit_forw_E.fixed['alpha_HuV'] = True
@@ -568,9 +544,7 @@ def forward_E_fit(Paralst_Unp):
 
     fit_forw_E.fixed['bexp_HSea'] = True
 
-    global Minuit_Counter, Time_Counter, time_start
-    Minuit_Counter = 0
-    Time_Counter = 1
+    global time_start
     time_start = time.time()
     
     fit_forw_E.migrad()
@@ -581,13 +555,18 @@ def forward_E_fit(Paralst_Unp):
     time_end = time.time() -time_start
 
     with open('GUMP_Output/E_forward_fit.txt', 'w') as f:
-        print('Total running time: %3.1f minutes. Total call of cost function: %3d.\n' % ( time_end/60, fit_forw_E.nfcn), file=f)
-        print('The chi squared/d.o.f. is: %3.1f / %3d ( = %3.1f ).\n' % (fit_forw_E.fval, ndof_E, fit_forw_E.fval/ndof_E), file = f)
+        print('Total running time: %.1f minutes. Total call of cost function: %3d.\n' % ( time_end/60, fit_forw_E.nfcn), file=f)
+        print('The chi squared/d.o.f. is: %.2f / %3d ( = %.2f ).\n' % (fit_forw_E.fval, ndof_E, fit_forw_E.fval/ndof_E), file = f)
         print('Below are the final output parameters from iMinuit:', file = f)
         print(*fit_forw_E.values, sep=", ", file = f)
         print(*fit_forw_E.errors, sep=", ", file = f)
         print(fit_forw_E.params, file = f)
 
+    with open("GUMP_Output/E_forward_cov.csv","w",newline='') as my_csv:
+        csvWriter = csv.writer(my_csv,delimiter=',')
+        csvWriter.writerows([*fit_forw_E.covariance])
+
+    print("E fit finished...")
     return fit_forw_E
 
 def cost_forward_Ht(Norm_HtuV,   alpha_HtuV,   beta_HtuV,   alphap_HtuV, 
@@ -600,16 +579,6 @@ def cost_forward_Ht(Norm_HtuV,   alpha_HtuV,   beta_HtuV,   alphap_HtuV,
                     R_Etu_xi2,   R_Etd_xi2,    R_Etg_xi2,
                     R_Htu_xi4,   R_Htd_xi4,    R_Htg_xi4,
                     R_Etu_xi4,   R_Etd_xi4,    R_Etg_xi4,   bexp_HtSea):
-
-    global Minuit_Counter, Time_Counter
-
-    time_now = time.time() - time_start
-    
-    if(time_now > Time_Counter * 600):
-        print('Runing Time:',round(time_now/60),'minutes. Cost function called total', Minuit_Counter, 'times.')
-        Time_Counter = Time_Counter + 1
-    
-    Minuit_Counter = Minuit_Counter + 1
 
     Paralst = [Norm_HtuV,   alpha_HtuV,   beta_HtuV,   alphap_HtuV, 
                Norm_Htubar, alpha_Htubar, beta_Htubar, alphap_Htqbar,
@@ -647,16 +616,6 @@ def cost_forward_Et(Norm_HtuV,   alpha_HtuV,   beta_HtuV,   alphap_HtuV,
                     R_Etu_xi2,   R_Etd_xi2,    R_Etg_xi2,
                     R_Htu_xi4,   R_Htd_xi4,    R_Htg_xi4,
                     R_Etu_xi4,   R_Etd_xi4,    R_Etg_xi4,   bexp_HtSea):
-
-    global Minuit_Counter, Time_Counter
-
-    time_now = time.time() - time_start
-    
-    if(time_now > Time_Counter * 600):
-        print('Runing Time:',round(time_now/60),'minutes. Cost function called total', Minuit_Counter, 'times.')
-        Time_Counter = Time_Counter + 1
-    
-    Minuit_Counter = Minuit_Counter + 1
 
     Paralst = [Norm_HtuV,   alpha_HtuV,   beta_HtuV,   alphap_HtuV, 
                Norm_Htubar, alpha_Htubar, beta_Htubar, alphap_Htqbar,
@@ -724,7 +683,8 @@ def forward_Ht_fit(Paralst_Pol):
     fit_forw_Ht.limits['beta_EtuV'] = (0, 15)
 
     fit_forw_Ht.fixed['alphap_Htqbar'] = True
-
+    fit_forw_Ht.fixed['alphap_Htg'] = True
+    
     fit_forw_Ht.fixed['Norm_EtuV'] = True
     fit_forw_Ht.fixed['alpha_EtuV'] = True
     fit_forw_Ht.fixed['beta_EtuV'] = True
@@ -749,9 +709,7 @@ def forward_Ht_fit(Paralst_Pol):
 
     fit_forw_Ht.fixed['bexp_HtSea'] = True
 
-    global Minuit_Counter, Time_Counter, time_start
-    Minuit_Counter = 0
-    Time_Counter = 1
+    global time_start 
     time_start = time.time()
     
     fit_forw_Ht.migrad()
@@ -761,13 +719,18 @@ def forward_Ht_fit(Paralst_Pol):
 
     time_end = time.time() -time_start    
     with open('GUMP_Output/Ht_forward_fit.txt', 'w') as f:
-        print('Total running time: %3.1f minutes. Total call of cost function: %3d.\n' % ( time_end/60, fit_forw_Ht.nfcn), file=f)
-        print('The chi squared/d.o.f. is: %3.1f / %3d ( = %3.1f ).\n' % (fit_forw_Ht.fval, ndof_Ht, fit_forw_Ht.fval/ndof_Ht), file = f)
+        print('Total running time: %.1f minutes. Total call of cost function: %3d.\n' % ( time_end/60, fit_forw_Ht.nfcn), file=f)
+        print('The chi squared/d.o.f. is: %.2f / %3d ( = %.2f ).\n' % (fit_forw_Ht.fval, ndof_Ht, fit_forw_Ht.fval/ndof_Ht), file = f)
         print('Below are the final output parameters from iMinuit:', file = f)
         print(*fit_forw_Ht.values, sep=", ", file = f)
         print(*fit_forw_Ht.errors, sep=", ", file = f)
         print(fit_forw_Ht.params, file = f)
 
+    with open("GUMP_Output/Ht_forward_cov.csv","w",newline='') as my_csv:
+        csvWriter = csv.writer(my_csv,delimiter=',')
+        csvWriter.writerows([*fit_forw_Ht.covariance])
+
+    print("Ht fit finished...")
     return fit_forw_Ht
 
 def forward_Et_fit(Paralst_Pol):
@@ -849,9 +812,7 @@ def forward_Et_fit(Paralst_Pol):
 
     fit_forw_Et.fixed['bexp_HtSea'] = True
 
-    global Minuit_Counter, Time_Counter, time_start
-    Minuit_Counter = 0
-    Time_Counter = 1
+    global time_start
     time_start = time.time()
     
     fit_forw_Et.migrad()
@@ -861,13 +822,18 @@ def forward_Et_fit(Paralst_Pol):
 
     time_end = time.time() -time_start    
     with open('GUMP_Output/Et_forward_fit.txt', 'w') as f:
-        print('Total running time: %3.1f minutes. Total call of cost function: %3d.\n' % ( time_end/60, fit_forw_Et.nfcn), file=f)
-        print('The chi squared/d.o.f. is: %3.1f / %3d ( = %3.1f ).\n' % (fit_forw_Et.fval, ndof_Et, fit_forw_Et.fval/ndof_Et), file = f)
+        print('Total running time: %.1f minutes. Total call of cost function: %3d.\n' % ( time_end/60, fit_forw_Et.nfcn), file=f)
+        print('The chi squared/d.o.f. is: %.2f / %3d ( = %.2f ).\n' % (fit_forw_Et.fval, ndof_Et, fit_forw_Et.fval/ndof_Et), file = f)
         print('Below are the final output parameters from iMinuit:', file = f)
         print(*fit_forw_Et.values, sep=", ", file = f)
         print(*fit_forw_Et.errors, sep=", ", file = f)
         print(fit_forw_Et.params, file = f)
 
+    with open("GUMP_Output/Et_forward_cov.csv","w",newline='') as my_csv:
+        csvWriter = csv.writer(my_csv,delimiter=',')
+        csvWriter.writerows([*fit_forw_Et.covariance])
+
+    print("Et fit finished...")
     return fit_forw_Et
 
 def cost_off_forward(Norm_HuV,    alpha_HuV,    beta_HuV,    alphap_HuV, 
@@ -876,8 +842,7 @@ def cost_off_forward(Norm_HuV,    alpha_HuV,    beta_HuV,    alphap_HuV,
                      Norm_Hdbar,  alpha_Hdbar,  beta_Hdbar, 
                      Norm_Hg,     alpha_Hg,     beta_Hg,     alphap_Hg,
                      Norm_EuV,    alpha_EuV,    beta_EuV,    alphap_EuV,
-                     Norm_EdV,    alpha_EdV,    beta_EdV,    alphap_EdV,
-                     R_E_Sea,     R_Hu_xi2,     R_Hd_xi2,    R_Hg_xi2,
+                     Norm_EdV,    R_E_Sea,      R_Hu_xi2,    R_Hd_xi2,    R_Hg_xi2,
                      R_Eu_xi2,    R_Ed_xi2,     R_Eg_xi2,
                      R_Hu_xi4,    R_Hd_xi4,     R_Hg_xi4,
                      R_Eu_xi4,    R_Ed_xi4,     R_Eg_xi4,    bexp_HSea,
@@ -907,8 +872,7 @@ def cost_off_forward(Norm_HuV,    alpha_HuV,    beta_HuV,    alphap_HuV,
                     Norm_Hdbar,  alpha_Hdbar,  beta_Hdbar, 
                     Norm_Hg,     alpha_Hg,     beta_Hg,     alphap_Hg,
                     Norm_EuV,    alpha_EuV,    beta_EuV,    alphap_EuV,
-                    Norm_EdV,    alpha_EdV,    beta_EdV,    alphap_EdV,
-                    R_E_Sea,     R_Hu_xi2,     R_Hd_xi2,    R_Hg_xi2,
+                    Norm_EdV,    R_E_Sea,      R_Hu_xi2,    R_Hd_xi2,    R_Hg_xi2,
                     R_Eu_xi2,    R_Ed_xi2,     R_Eg_xi2,
                     R_Hu_xi4,    R_Hd_xi4,     R_Hg_xi4,
                     R_Eu_xi4,    R_Ed_xi4,     R_Eg_xi4,    bexp_HSea]
@@ -936,6 +900,70 @@ def cost_off_forward(Norm_HuV,    alpha_HuV,    beta_HuV,    alphap_HuV,
 
     return  cost_DVCSxsec + cost_DVCS_HERA
 
+def cost_off_forward_test(Norm_HuV,    alpha_HuV,    beta_HuV,    alphap_HuV, 
+                     Norm_Hubar,  alpha_Hubar,  beta_Hubar,  alphap_Hqbar,
+                     Norm_HdV,    alpha_HdV,    beta_HdV,    alphap_HdV,
+                     Norm_Hdbar,  alpha_Hdbar,  beta_Hdbar, 
+                     Norm_Hg,     alpha_Hg,     beta_Hg,     alphap_Hg,
+                     Norm_EuV,    alpha_EuV,    beta_EuV,    alphap_EuV,
+                     Norm_EdV,    R_E_Sea,      R_Hu_xi2,    R_Hd_xi2,    R_Hg_xi2,
+                     R_Eu_xi2,    R_Ed_xi2,     R_Eg_xi2,
+                     R_Hu_xi4,    R_Hd_xi4,     R_Hg_xi4,
+                     R_Eu_xi4,    R_Ed_xi4,     R_Eg_xi4,    bexp_HSea,
+                     Norm_HtuV,   alpha_HtuV,   beta_HtuV,   alphap_HtuV, 
+                     Norm_Htubar, alpha_Htubar, beta_Htubar, alphap_Htqbar,
+                     Norm_HtdV,   alpha_HtdV,   beta_HtdV,   alphap_HtdV,
+                     Norm_Htdbar, alpha_Htdbar, beta_Htdbar, 
+                     Norm_Htg,    alpha_Htg,    beta_Htg,    alphap_Htg,
+                     Norm_EtuV,   alpha_EtuV,   beta_EtuV,   alphap_EtuV,
+                     Norm_EtdV,   R_Et_Sea,     R_Htu_xi2,   R_Htd_xi2,    R_Htg_xi2,
+                     R_Etu_xi2,   R_Etd_xi2,    R_Etg_xi2,
+                     R_Htu_xi4,   R_Htd_xi4,    R_Htg_xi4,
+                     R_Etu_xi4,   R_Etd_xi4,    R_Etg_xi4,   bexp_HtSea):
+
+    global Minuit_Counter, Time_Counter
+
+    time_now = time.time() - time_start
+    
+    if(time_now > Time_Counter * 600):
+        print('Runing Time:',round(time_now/60),'minutes. Cost function called total', Minuit_Counter, 'times.')
+        Time_Counter = Time_Counter + 1
+    
+    Minuit_Counter = Minuit_Counter + 1
+    Para_Unp_lst = [Norm_HuV,    alpha_HuV,    beta_HuV,    alphap_HuV, 
+                    Norm_Hubar,  alpha_Hubar,  beta_Hubar,  alphap_Hqbar,
+                    Norm_HdV,    alpha_HdV,    beta_HdV,    alphap_HdV,
+                    Norm_Hdbar,  alpha_Hdbar,  beta_Hdbar, 
+                    Norm_Hg,     alpha_Hg,     beta_Hg,     alphap_Hg,
+                    Norm_EuV,    alpha_EuV,    beta_EuV,    alphap_EuV,
+                    Norm_EdV,    R_E_Sea,     R_Hu_xi2,     R_Hd_xi2,    R_Hg_xi2,
+                    R_Eu_xi2,    R_Ed_xi2,     R_Eg_xi2,
+                    R_Hu_xi4,    R_Hd_xi4,     R_Hg_xi4,
+                    R_Eu_xi4,    R_Ed_xi4,     R_Eg_xi4,    bexp_HSea]
+
+    Para_Pol_lst = [Norm_HtuV,   alpha_HtuV,   beta_HtuV,   alphap_HtuV, 
+                    Norm_Htubar, alpha_Htubar, beta_Htubar, alphap_Htqbar,
+                    Norm_HtdV,   alpha_HtdV,   beta_HtdV,   alphap_HtdV,
+                    Norm_Htdbar, alpha_Htdbar, beta_Htdbar, 
+                    Norm_Htg,    alpha_Htg,    beta_Htg,    alphap_Htg,
+                    Norm_EtuV,   alpha_EtuV,   beta_EtuV,   alphap_EtuV,
+                    Norm_EtdV,   R_Et_Sea,     R_Htu_xi2,   R_Htd_xi2,    R_Htg_xi2,
+                    R_Etu_xi2,   R_Etd_xi2,    R_Etg_xi2,
+                    R_Htu_xi4,   R_Htd_xi4,    R_Htg_xi4,
+                    R_Etu_xi4,   R_Etd_xi4,    R_Etg_xi4,   bexp_HtSea]
+        
+    Para_Unp_all = ParaManager_Unp(Para_Unp_lst)
+    Para_Pol_all = ParaManager_Pol(Para_Pol_lst)
+
+    cost_DVCS_xBtQ = np.array(list(pool.map(partial(DVCSxsec_cost_xBtQ, Para_Unp = Para_Unp_all, Para_Pol = Para_Pol_all), DVCSxsec_group_data)))
+    cost_DVCSxsec = np.sum(cost_DVCS_xBtQ)
+
+    # DVCS_HERA_pred = np.array(list(pool.map(partial(DVCSxsec_HERA_theo, Para_Unp = Para_Unp_all, Para_Pol = Para_Pol_all), np.array(DVCS_HERA_data))))
+    DVCS_HERA_pred = DVCSxsec_HERA_theo(DVCS_HERA_data, Para_Unp=Para_Unp_all, Para_Pol=Para_Pol_all)
+    cost_DVCS_HERA = np.sum(((DVCS_HERA_pred - DVCS_HERA_data['f'])/ DVCS_HERA_data['delta f']) ** 2 )
+
+    return  cost_DVCSxsec, cost_DVCS_HERA
+
 def off_forward_fit(Paralst_Unp, Paralst_Pol):
 
     [Norm_HuV_Init,    alpha_HuV_Init,    beta_HuV_Init,    alphap_HuV_Init, 
@@ -944,8 +972,7 @@ def off_forward_fit(Paralst_Unp, Paralst_Pol):
      Norm_Hdbar_Init,  alpha_Hdbar_Init,  beta_Hdbar_Init, 
      Norm_Hg_Init,     alpha_Hg_Init,     beta_Hg_Init,     alphap_Hg_Init,
      Norm_EuV_Init,    alpha_EuV_Init,    beta_EuV_Init,    alphap_EuV_Init,
-     Norm_EdV_Init,    alpha_EdV_Init,    beta_EdV_Init,    alphap_EdV_Init,
-     R_E_Sea_Init,     R_Hu_xi2_Init,     R_Hd_xi2_Init,    R_Hg_xi2_Init,
+     Norm_EdV_Init,    R_E_Sea_Init,      R_Hu_xi2_Init,    R_Hd_xi2_Init,    R_Hg_xi2_Init,
      R_Eu_xi2_Init,    R_Ed_xi2_Init,     R_Eg_xi2_Init,
      R_Hu_xi4_Init,    R_Hd_xi4_Init,     R_Hg_xi4_Init,
      R_Eu_xi4_Init,    R_Ed_xi4_Init,     R_Eg_xi4_Init,    bexp_HSea_Init] = Paralst_Unp
@@ -967,8 +994,7 @@ def off_forward_fit(Paralst_Unp, Paralst_Pol):
                                                Norm_Hdbar = Norm_Hdbar_Init, alpha_Hdbar = alpha_Hdbar_Init,  beta_Hdbar = beta_Hdbar_Init, 
                                                Norm_Hg = Norm_Hg_Init,       alpha_Hg = alpha_Hg_Init,        beta_Hg = beta_Hg_Init,       alphap_Hg = alphap_Hg_Init,
                                                Norm_EuV = Norm_EuV_Init,     alpha_EuV = alpha_EuV_Init,      beta_EuV = beta_EuV_Init,     alphap_EuV = alphap_EuV_Init, 
-                                               Norm_EdV = Norm_EdV_Init,     alpha_EdV = alpha_EdV_Init,      beta_EdV = beta_EdV_Init,     alphap_EdV = alphap_EdV_Init,
-                                               R_E_Sea = R_E_Sea_Init,       R_Hu_xi2 = R_Hu_xi2_Init,        R_Hd_xi2 = R_Hd_xi2_Init,     R_Hg_xi2 = R_Hg_xi2_Init,
+                                               Norm_EdV = Norm_EdV_Init,     R_E_Sea = R_E_Sea_Init,          R_Hu_xi2 = R_Hu_xi2_Init,     R_Hd_xi2 = R_Hd_xi2_Init,     R_Hg_xi2 = R_Hg_xi2_Init,
                                                R_Eu_xi2 = R_Eu_xi2_Init,     R_Ed_xi2 = R_Ed_xi2_Init,        R_Eg_xi2 = R_Eg_xi2_Init,
                                                R_Hu_xi4 = R_Hu_xi4_Init,     R_Hd_xi4 = R_Hd_xi4_Init,        R_Hg_xi4 = R_Hg_xi4_Init,
                                                R_Eu_xi4 = R_Eu_xi4_Init,     R_Ed_xi4 = R_Ed_xi4_Init,        R_Eg_xi4 = R_Eg_xi4_Init,     bexp_HSea = bexp_HSea_Init,
@@ -986,6 +1012,8 @@ def off_forward_fit(Paralst_Unp, Paralst_Pol):
 
     fit_off_forward.limits['bexp_HSea']  = (0, 10)
     fit_off_forward.limits['bexp_HtSea'] = (0, 10)
+
+    fit_off_forward.limits['R_Et_Sea']   = (-50, 50)
 
     fit_off_forward.fixed['Norm_HuV'] = True
     fit_off_forward.fixed['alpha_HuV'] = True
@@ -1010,7 +1038,6 @@ def off_forward_fit(Paralst_Unp, Paralst_Pol):
     fit_off_forward.fixed['Norm_Hg'] = True
     fit_off_forward.fixed['alpha_Hg'] = True
     fit_off_forward.fixed['beta_Hg'] = True
-    fit_off_forward.fixed['alphap_Hg'] = True
 
     fit_off_forward.fixed['Norm_EuV'] = True
     fit_off_forward.fixed['alpha_EuV'] = True
@@ -1018,9 +1045,6 @@ def off_forward_fit(Paralst_Unp, Paralst_Pol):
     fit_off_forward.fixed['alphap_EuV'] = True
 
     fit_off_forward.fixed['Norm_EdV'] = True
-    fit_off_forward.fixed['alpha_EdV'] = True
-    fit_off_forward.fixed['beta_EdV'] = True
-    fit_off_forward.fixed['alphap_EdV'] = True
 
     fit_off_forward.fixed['Norm_HtuV'] = True
     fit_off_forward.fixed['alpha_HtuV'] = True
@@ -1045,7 +1069,6 @@ def off_forward_fit(Paralst_Unp, Paralst_Pol):
     fit_off_forward.fixed['Norm_Htg'] = True
     fit_off_forward.fixed['alpha_Htg'] = True
     fit_off_forward.fixed['beta_Htg'] = True
-    fit_off_forward.fixed['alphap_Htg'] = True
 
     fit_off_forward.fixed['Norm_EtuV'] = True
     fit_off_forward.fixed['alpha_EtuV'] = True
@@ -1053,6 +1076,9 @@ def off_forward_fit(Paralst_Unp, Paralst_Pol):
     fit_off_forward.fixed['alphap_EtuV'] = True
 
     fit_off_forward.fixed['Norm_EtdV'] = True
+
+    fit_off_forward.fixed['alphap_Hg'] = True
+    fit_off_forward.fixed['alphap_Htg'] = True
 
     fit_off_forward.fixed['R_Hg_xi2'] = True
     fit_off_forward.fixed['R_Eg_xi2'] = True
@@ -1063,6 +1089,16 @@ def off_forward_fit(Paralst_Unp, Paralst_Pol):
     fit_off_forward.fixed['R_Eg_xi4'] = True
     fit_off_forward.fixed['R_Htg_xi4'] = True
     fit_off_forward.fixed['R_Etg_xi4'] = True
+
+    fit_off_forward.fixed['R_Hu_xi4']  = True 
+    fit_off_forward.fixed['R_Eu_xi4']  = True
+    fit_off_forward.fixed['R_Htu_xi4'] = True 
+    fit_off_forward.fixed['R_Etu_xi4'] = True
+
+    fit_off_forward.fixed['R_Hd_xi4']  = True 
+    fit_off_forward.fixed['R_Ed_xi4']  = True
+    fit_off_forward.fixed['R_Htd_xi4'] = True 
+    fit_off_forward.fixed['R_Etd_xi4'] = True
 
     """
     fit_off_forward.fixed['R_Hu_xi4'] = True
@@ -1089,13 +1125,18 @@ def off_forward_fit(Paralst_Unp, Paralst_Pol):
     time_end = time.time() -time_start
 
     with open('GUMP_Output/off_forward_fit.txt', 'w') as f:
-        print('Total running time: %3.1f minutes. Total call of cost function: %3d.\n' % ( time_end/60, fit_off_forward.nfcn), file=f)
-        print('The chi squared/d.o.f. is: %3.1f / %3d ( = %3.1f ).\n' % (fit_off_forward.fval, ndof_off_forward, fit_off_forward.fval/ndof_off_forward), file = f)
+        print('Total running time: %.1f minutes. Total call of cost function: %3d.\n' % ( time_end/60, fit_off_forward.nfcn), file=f)
+        print('The chi squared/d.o.f. is: %.2f / %3d ( = %.2f ).\n' % (fit_off_forward.fval, ndof_off_forward, fit_off_forward.fval/ndof_off_forward), file = f)
         print('Below are the final output parameters from iMinuit:', file = f)
         print(*fit_off_forward.values, sep=", ", file = f)
         print(*fit_off_forward.errors, sep=", ", file = f)
         print(fit_off_forward.params, file = f)
 
+    with open("GUMP_Output/Off_forward_cov.csv","w",newline='') as my_csv:
+        csvWriter = csv.writer(my_csv,delimiter=',')
+        csvWriter.writerows([*fit_off_forward.covariance])
+
+    print("off forward fit finished...")
     return fit_off_forward
 
 def cost_dvmp(Norm_HuV,    alpha_HuV,    beta_HuV,    alphap_HuV, 
@@ -1283,12 +1324,6 @@ def dvmp_fit(Paralst_Unp):
 if __name__ == '__main__':
     pool = Pool()
     time_start = time.time()
-<<<<<<< Updated upstream
-
-    Paralst_Unp     = [4.922770899728711, 0.21631245457726278, 3.2286340744892907, 2.348399185175322, 0.16365640346071564, 1.1354420505970975, 6.900555781000984, 0.15, 3.3576171024691988, 0.18433322801878216, 4.417047711571693, 3.4784962312911554, 0.24919405603782252, 1.0519014521338468, 6.550675975040194, 2.8569361638914623, 1.052850395852861, 7.3858686738696075, 1.3667990030964654, 11.428596979560261, -0.14503367665445221, 3.758714482921486, 5.682818126206609, -0.04238153011014113, 0.9803227812334159, 0.4586142799424245, 0.09122382463597081, 0.5174928633254026, -3.6601890894524987, 4.4047879899243005, 1.0, 6.068048827873447, 30.197110804859197, 1.0, 1.1390141973542285, -1.542434376217511, 0.0, -1.6034835605512132, -10.27405958258355, 0.0, 0]
-    Paralst_Pol     = [4.519500903078374, -0.24572273380859522, 3.0336506651929422, 2.6222628900332507, 0.07497508649129046, 0.5197103475539158, 4.325734887333323, 0.15, -0.7127190055054058, 0.21139941814694918, 3.2384085342954885, 4.446272032794327, -0.055483176661642805, 0.6154810679003333, 2.074752893822682, 0.24189131037183043, 0.6323075664721904, 2.7069132220353342, 1.1, 8.795795400853171, 0.7999999981931851, 7.29806279081493, 1.9980251635965138, -3.4981561238130356, -0.6401207838946621, 3.6721190840512543, 41.05312601873508, 1.0, 1.139988840989931, 10.38510432334534, 1.0, -1.1225695849394057, -11.859558195586501, 0.0, 3.052120336919783, 32.4062446087123, 0.0, 0]
-    
-=======
     
     Paralst_Unp     = [0*4.922551238,0.21635596,3.228702555,2.349193947,0*0.414,1.022,7.737,0.15,0*3.358541913,0.184196049,4.41726899,3.475742056,0*0.414,1.022,7.737,2.690, 0.469, 3.15, 0.15,0*0.161159704,0*0.916012032,0*1.02239598,0*0.41423421,0*-0.198595321,0*0.0,0*0.18394307,0*-2.260952723,0*0,0*1.159322377,0*2.569800357,0,0,0,0,0,0,0,2.6]
     Paralst_Pol     = [4.529773253,-0.246812532,3.037043159,2.607360484,0.076575866,0.516192897,4.369657188,0.15,-0.711694724,0.210181857,3.243538578,4.319727451,-0.057100694,0.612255908,2.099180441,0.243247279,0.630824175,2.71840147,0.15,9.065736349,0.79999977,7.357005187,2.083472023,-3.562901039,0.0,-0.634095327,-7.058667382,0,2.861662204,23.1231347,0,0,0,0,0,0,0,5.379752095]
@@ -1297,7 +1332,6 @@ if __name__ == '__main__':
 
     """
 
->>>>>>> Stashed changes
     fit_forward_H   = forward_H_fit(Paralst_Unp)
     Paralst_Unp     = np.array(fit_forward_H.values)
 
@@ -1309,13 +1343,6 @@ if __name__ == '__main__':
 
     fit_forward_Et  = forward_Et_fit(Paralst_Pol)
     Paralst_Pol     = np.array(fit_forward_Et.values)
-<<<<<<< Updated upstream
-
-    fit_off_forward = off_forward_fit(Paralst_Unp, Paralst_Pol)
-
-    Para_Unp_All    = ParaManager_Unp(Paralst_Unp)
-    Para_Pol_All    = ParaManager_Pol(Paralst_Pol)
-=======
     
     """
 
@@ -1325,4 +1352,3 @@ if __name__ == '__main__':
    # print(cost_off_forward_test(4.92252245341075, 0.21632833928300776, 3.228525762889928, 2.347470994624827, 0.16344460105600744, 1.135739437288775, 6.893895640954224, 0.15, 3.358767931921898, 0.1842893653407356, 4.417802345266761, 3.4816671934041685, 0.2491737223289409, 1.0519258916411531, 6.553873836594824, 2.8642810381756982, 1.0523058580968585, 7.412779706371915, 0.15, 0.1813228421702434, 0.9068471909677753, 1.1018931174030364, 0.4607676086634599, -0.22341404954304522, 0.7683213780361391, 0.22948701913308733, -2.638627981453611, 0.0, 0.7985103392773935, 3.404262017724412, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 3.44764738950069, 4.833430384423373, -0.26355746727810136, 3.1855567245326317, 2.1817250267982997, 0.06994083000560514, 0.5376473088622284, 4.22898219488582, 0.15, -0.663583721889865, 0.24767388786943867, 3.5722668493718626, 0.5420415127277624, -0.08640413690298866, 0.4946733452347538, 2.553713733867575, 0.24307061469378405, 0.6309890923077655, 2.716624295877619, 0.15, 7.99299605623125, 0.799997370438831, 6.415448025778247, 2.0758963463111515, -2.407059919688728, 37.65971219196447, 0.24589373380232807, 1.6561364171210822, 0.0, 2.6840962695831894, 37.58453653636456, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 9.852441955678458))
 
 
->>>>>>> Stashed changes
