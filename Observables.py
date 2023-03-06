@@ -335,6 +335,9 @@ def ConfWaveFuncG(j: complex, x: float, xi: float) -> complex:
 def CWilson(j: complex) -> complex:
     return 2 ** (1+j) * gamma(5/2+j) / (gamma(3/2) * gamma(3+j))
 
+def CWilsonT(j: complex, nf: int) -> complex:
+    return np.array([3 * 2 ** (1+j) * gamma(5/2+j) / (gamma(3/2) * gamma(3+j)), 3 * 2 ** (1+j) * gamma(5/2+j) / nf / (gamma(3/2) * gamma(3+j)), 3 * 2 ** (1+j) * gamma(5/2+j) / (gamma(3/2) * gamma(3+j)), 3 * 2 ** (1+j) * gamma(5/2+j) / nf / (gamma(3/2) * gamma(3+j)),  3 * 2 * 2 ** (1+j) * gamma(5/2+j) / 3 / (gamma(3/2) * gamma(3+j))])
+
 
 """
 ***********************Observables***************************************
@@ -570,8 +573,8 @@ class GPDobserv (object) :
                                     + CWilson(j+2) * Moment_Evo(j+2, NFEFF, self.p, self.Q, ConfFlav_xi2) \
                                     + CWilson(j+4) * Moment_Evo(j+4, NFEFF, self.p, self.Q, ConfFlav_xi4))
                 """
-                EvoConf_Wilson = (CWilson(j) * Moment_Evo_T(j, NFEFF, self.p, self.Q, ConfFlav) \
-                                    + CWilson(j+2) * Moment_Evo_T(j+2, NFEFF, self.p, self.Q, ConfFlav_xi2))
+                EvoConf_Wilson = (np.einsum('j, ...j->...j', CWilsonT(j, NFEFF), Moment_Evo(j, NFEFF, self.p, self.Q, ConfFlav)) \
+                                    + np.einsum('j, ...j->...j', CWilsonT(j+2, NFEFF), Moment_Evo(j+2, NFEFF, self.p, self.Q, ConfFlav_xi2)))
 
                 if(meson == 1):
                     return np.einsum('j, ...j', TFF_rho_trans, EvoConf_Wilson)
