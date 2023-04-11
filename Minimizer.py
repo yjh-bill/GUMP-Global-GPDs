@@ -86,43 +86,19 @@ DVphiPH1xsec_group_data = list(map(lambda set: DVphiPH1xsec_data[(DVphiPH1xsec_d
 
 # Jpsi data from HERA as well as R = sigma_L / sigma_T values hardcoded and used to convert data xsec simga_tot to sigma_L
 
-DVJpsiPH1xsec_data = pd.read_csv('GUMPDATA/DVMP_HERA/DVJpsiPH1dt.csv', header = None, names = ['y', 'xB', 't', 'Q', 'f', 'delta f'] , dtype = {'y': float, 'xB': float, 't': float, 'Q': float, 'f': float, 'delta f': float})
+DVJpsiPH1xsec_data = pd.read_csv('GUMPDATA/DVMP_HERA/DVJpsiPH1dt_w_mass.csv', header = None, names = ['y', 'xB', 't', 'Q', 'f', 'delta f'] , dtype = {'y': float, 'xB': float, 't': float, 'Q': float, 'f': float, 'delta f': float})
 DVJpsiPH1xsec_data['Q'] = np.sqrt(DVJpsiPH1xsec_data['Q'])
 DVJpsiPH1xsec_data['t'] = -1 * DVJpsiPH1xsec_data['t']
 DVJpsiPH1xsec_data = DVJpsiPH1xsec_data[(DVJpsiPH1xsec_data['Q']>Q_threshold)]
 xBtQlst_JpsiH = DVJpsiPH1xsec_data.drop_duplicates(subset = ['xB', 't', 'Q'], keep = 'first')[['xB','t','Q']].values.tolist()
-DVJpsiPH1xsec_L_data = DVJpsiPH1xsec_data.copy()
-R_H1 = DVJpsiPH1xsec_L_data['f'].copy()
-R_H1[(DVJpsiPH1xsec_L_data['Q']**2 > 1) & (DVJpsiPH1xsec_L_data['Q']**2 < 5)] = 0.052
-R_H1[(DVJpsiPH1xsec_L_data['Q']**2 > 5) & (DVJpsiPH1xsec_L_data['Q']**2 < 10)] = 0.23
-R_H1[(DVJpsiPH1xsec_L_data['Q']**2 > 10)] = 0.62
-R_H1_err = DVJpsiPH1xsec_L_data['f'].copy()
-R_H1_err[(DVJpsiPH1xsec_L_data['Q']**2 > 2) & (DVJpsiPH1xsec_L_data['Q']**2 < 5)] = 0.113
-R_H1_err[(DVJpsiPH1xsec_L_data['Q']**2 > 5) & (DVJpsiPH1xsec_L_data['Q']**2 < 10)] = 0.27
-R_H1_err[(DVJpsiPH1xsec_L_data['Q']**2 > 10)] = 0.61
-DVJpsiPH1xsec_L_data['f'] = DVJpsiPH1xsec_L_data['f'] / ((1 - DVJpsiPH1xsec_L_data['y']) / (1 - DVJpsiPH1xsec_L_data['y'] - DVJpsiPH1xsec_L_data['y']**2 / 2) + (1 / R_H1))
-DVJpsiPH1xsec_L_data['delta f'] = np.sqrt((DVJpsiPH1xsec_L_data['delta f'] / ((1 - DVJpsiPH1xsec_L_data['y']) / (1 - DVJpsiPH1xsec_L_data['y'] - DVJpsiPH1xsec_L_data['y']**2 / 2) + (1 / R_H1)))**2 + (R_H1_err * DVJpsiPH1xsec_L_data['f'] / (1 + (1 - DVJpsiPH1xsec_L_data['y']) / (1 - DVJpsiPH1xsec_L_data['y'] - DVJpsiPH1xsec_L_data['y']**2 / 2) * R_H1)**2)**2)
 DVJpsiPH1xsec_group_data = list(map(lambda set: DVJpsiPH1xsec_data[(DVJpsiPH1xsec_data['xB'] == set[0]) & (DVJpsiPH1xsec_data['t'] == set[1]) & ((DVJpsiPH1xsec_data['Q'] == set[2]))], xBtQlst_JpsiH))
-DVJpsiPH1xsec_L_group_data = list(map(lambda set: DVJpsiPH1xsec_L_data[(DVJpsiPH1xsec_data['xB'] == set[0]) & (DVJpsiPH1xsec_L_data['t'] == set[1]) & ((DVJpsiPH1xsec_L_data['Q'] == set[2]))], xBtQlst_JpsiH))
 
-DVJpsiPZEUSxsec_data = pd.read_csv('GUMPDATA/DVMP_HERA/DVJpsiPZEUSdt.csv', header = None, names = ['y', 'xB', 't', 'Q', 'f', 'delta f'] , dtype = {'y': float, 'xB': float, 't': float, 'Q': float, 'f': float, 'delta f': float})
+DVJpsiPZEUSxsec_data = pd.read_csv('GUMPDATA/DVMP_HERA/DVJpsiPZEUSdt_w_mass.csv', header = None, names = ['y', 'xB', 't', 'Q', 'f', 'delta f'] , dtype = {'y': float, 'xB': float, 't': float, 'Q': float, 'f': float, 'delta f': float})
 DVJpsiPZEUSxsec_data['Q'] = np.sqrt(DVJpsiPZEUSxsec_data['Q'])
 DVJpsiPZEUSxsec_data['t'] = -1 * DVJpsiPZEUSxsec_data['t']
 DVJpsiPZEUSxsec_data = DVJpsiPZEUSxsec_data[(DVJpsiPZEUSxsec_data['Q']>Q_threshold)]
 xBtQlst_JpsiZ = DVJpsiPZEUSxsec_data.drop_duplicates(subset = ['xB', 't', 'Q'], keep = 'first')[['xB','t','Q']].values.tolist()
-DVJpsiPZEUSxsec_L_data = DVJpsiPZEUSxsec_data.copy()
-R_ZEUS = DVJpsiPZEUSxsec_L_data['f'].copy()
-R_ZEUS[(DVJpsiPZEUSxsec_L_data['Q']**2 > 2) & (DVJpsiPZEUSxsec_L_data['Q']**2 < 5)] = 0.13
-R_ZEUS[(DVJpsiPZEUSxsec_L_data['Q']**2 > 5) & (DVJpsiPZEUSxsec_L_data['Q']**2 < 10)] = 0.33
-R_ZEUS[(DVJpsiPZEUSxsec_L_data['Q']**2 > 10)] = 1.19
-R_ZEUS_err = DVJpsiPZEUSxsec_L_data['f'].copy()
-R_ZEUS_err[(DVJpsiPZEUSxsec_L_data['Q']**2 > 2) & (DVJpsiPZEUSxsec_L_data['Q']**2 < 5)] = 0.19
-R_ZEUS_err[(DVJpsiPZEUSxsec_L_data['Q']**2 > 5) & (DVJpsiPZEUSxsec_L_data['Q']**2 < 10)] = 0.25
-R_ZEUS_err[(DVJpsiPZEUSxsec_L_data['Q']**2 > 10)] = 0.58
-DVJpsiPZEUSxsec_L_data['f'] = DVJpsiPZEUSxsec_L_data['f'] / ((1 - DVJpsiPZEUSxsec_L_data['y']) / (1 - DVJpsiPZEUSxsec_L_data['y'] - DVJpsiPZEUSxsec_L_data['y']**2 / 2) + (1 / R_ZEUS))
-DVJpsiPZEUSxsec_L_data['delta f'] = np.sqrt((DVJpsiPZEUSxsec_L_data['delta f'] / ((1 - DVJpsiPZEUSxsec_L_data['y']) / (1 - DVJpsiPZEUSxsec_L_data['y'] - DVJpsiPZEUSxsec_L_data['y']**2 / 2) + (1 / R_ZEUS)))**2 + (R_ZEUS_err * DVJpsiPZEUSxsec_L_data['f'] / (1 + (1 - DVJpsiPZEUSxsec_L_data['y']) / (1 - DVJpsiPZEUSxsec_L_data['y'] - DVJpsiPZEUSxsec_L_data['y']**2 / 2) * R_ZEUS)**2)**2)
 DVJpsiPZEUSxsec_group_data = list(map(lambda set: DVJpsiPZEUSxsec_data[(DVJpsiPZEUSxsec_data['xB'] == set[0]) & (DVJpsiPZEUSxsec_data['t'] == set[1]) & ((DVJpsiPZEUSxsec_data['Q'] == set[2]))], xBtQlst_JpsiZ))
-DVJpsiPZEUSxsec_L_group_data = list(map(lambda set: DVJpsiPZEUSxsec_L_data[(DVJpsiPZEUSxsec_data['xB'] == set[0]) & (DVJpsiPZEUSxsec_L_data['t'] == set[1]) & ((DVJpsiPZEUSxsec_L_data['Q'] == set[2]))], xBtQlst_JpsiZ))
 
 
 
@@ -215,8 +191,8 @@ def TFF_theo_phi(xB, t, Q, Para_Unp):
 
 def TFF_theo_jpsi(xB, t, Q, Para_Unp):
     x = 0
-    xi = (1/(2 - xB) - (2*t*(-1 + xB))/(Q**2*(-2 + xB)**2))*xB
-    H_E = GPDobserv(x, xi, t, Q, 1)
+    xi = (1/(2 - xB) - (2*t*(-1 + xB))/((Q**2 + dvmp.M_jpsi**2)*(-2 + xB)**2))*xB
+    H_E = GPDobserv(x, xi, t, np.sqrt(Q**2 + dvmp.M_jpsi**2), 1)
     HTFF_jpsi = H_E.TFF(Para_Unp[..., 0, :, :, :, :],3)
     ETFF_jpsi = H_E.TFF(Para_Unp[..., 1, :, :, :, :],3)
     
@@ -280,7 +256,7 @@ def DVjpsiPxsec_theo(DVjpsiPxsec_input: pd.DataFrame, TFF_jpsi_input: np.array):
     t = DVjpsiPxsec_input['t'].to_numpy()
     Q = DVjpsiPxsec_input['Q'].to_numpy()    
     [HTFF_jpsi, ETFF_jpsi] = TFF_jpsi_input
-    return 2*np.pi*dvmp.dsigma_Jpsi_dt(y, xB, t, Q, 0, HTFF_jpsi, ETFF_jpsi)
+    return dvmp.dsigma_Jpsi_dt(y, xB, t, Q, 0, HTFF_jpsi, ETFF_jpsi)
 
 def DVrhoPxsec_cost_xBtQ(DVrhoPxsec_data_xBtQ: pd.DataFrame, Para_Unp):
     [xB, t, Q] = [DVrhoPxsec_data_xBtQ['xB'].iat[0], DVrhoPxsec_data_xBtQ['t'].iat[0], DVrhoPxsec_data_xBtQ['Q'].iat[0]] 
@@ -1187,10 +1163,10 @@ def cost_dvmp(Norm_HuV,    alpha_HuV,    beta_HuV,    alphap_HuV,
    # cost_DVphiPH1_xBtQ = np.array(list(pool.map(partial(DVphiPxsec_cost_xBtQ, Para_Unp = Para_Unp_all), DVphiPH1xsec_group_data)))
    # cost_DVphiPH1xsec = np.sum(cost_DVphiPH1_xBtQ)
    
-    cost_DVjpsiPZEUS_xBtQ = np.array(list(pool.map(partial(DVjpsiPxsec_cost_xBtQ, Para_Unp = Para_Unp_all), DVJpsiPZEUSxsec_L_group_data)))
+    cost_DVjpsiPZEUS_xBtQ = np.array(list(pool.map(partial(DVjpsiPxsec_cost_xBtQ, Para_Unp = Para_Unp_all), DVJpsiPZEUSxsec_group_data)))
     cost_DVjpsiPZEUSxsec = np.sum(cost_DVjpsiPZEUS_xBtQ)
     
-    cost_DVjpsiPH1_xBtQ = np.array(list(pool.map(partial(DVjpsiPxsec_cost_xBtQ, Para_Unp = Para_Unp_all), DVJpsiPH1xsec_L_group_data)))
+    cost_DVjpsiPH1_xBtQ = np.array(list(pool.map(partial(DVjpsiPxsec_cost_xBtQ, Para_Unp = Para_Unp_all), DVJpsiPH1xsec_group_data)))
     cost_DVjpsiPH1xsec = np.sum(cost_DVjpsiPH1_xBtQ)
 
     
