@@ -5,12 +5,24 @@ With the GPDs ansatz, observables with LO evolution are calculated
 import scipy as sp
 import numpy as np
 from mpmath import mp, hyp2f1
-from scipy.integrate import quad, quad_vec
+from scipy.integrate import quad, quad_vec, fixed_quad
 from scipy.special import gamma
 from Evolution import Coeff_Evo
 from Parameters import Flavor_Factor
 
 CFF_trans =np.array([1*(2/3)**2, 2*(2/3)**2, 1*(1/3)**2, 2*(1/3)**2, 0])
+
+
+###########################################
+# A helper function. This is needed to fit the format of fixed_quad
+def convert_vec(f):
+    def f_converted(xs):
+        results = Parallel(n_jobs=-1)(delayed(f)(x) for x in xs)
+        return np.stack(results, axis=-1)
+    return f_converted
+
+nquad = 10  # order of quadrature used in integration
+##############################################
 
 """
 ***********************GPD moments***************************************
@@ -408,7 +420,8 @@ class GPDobserv (object) :
             # Flv_Intp  result (N)
             return Flv_Intp(np.einsum('...ij,...j->...i', Coeff_Evo(s - 1, NFEFF, self.p, self.Q, InvMellinWaveConf(s)), ConfFlav), flv)
 
-        return quad_vec(lambda imS : np.real(Integrand_inv_Mellin(reS + 1j * imS)/(2 * np.pi)) , - Max_imS, + Max_imS, epsrel = Prec_Goal)[0]
+        Integrand_inv_Mellin_c = convert_vec(Integrand_inv_Mellin)
+        return fixed_quad(lambda imS : np.real(Integrand_inv_Mellin(reS + 1j * imS)/(2 * np.pi)) , - Max_imS, + Max_imS, n=nquad)[0]
 
 
     def CFF(self, ParaAll):
@@ -498,7 +511,9 @@ class GPDobserv (object) :
 
             return result
 
-        return quad_vec(Integrand_CFF, - Max_imJ, + Max_imJ, epsrel = Prec_Goal)[0] + CFFj0()
+        Integrand_CFF_c = convert_vec(Integrand_CFF)
+
+        return fixed_quad(Integrand_CFF_c, - Max_imJ, + Max_imJ, n=nquad)[0] + CFFj0()
 
         '''
         if (self.p == 1):
@@ -610,7 +625,9 @@ class GPDobserv (object) :
                 #return Flv_Intp(np.einsum('...ij,...j->...i', ConfWaveConv(0), ConfFlav) + self.xi ** 2 * np.einsum('...ij,...j->...i', ConfWaveConv(2), Moment_Evo(2, NFEFF, self.p, self.Q, ConfFlav_xi2))+ self.xi ** 4 * np.einsum('...ij,...j->...i', ConfWaveConv(4), Moment_Evo(4, NFEFF, self.p, self.Q, ConfFlav_xi4)), flv)
                 return Flv_Intp(np.einsum('...ij,...j->...i', ConfWaveConv(0), ConfFlav), flv)
 
-        return quad_vec(lambda imJ : np.real(Integrand_Mellin_Barnes(reJ + 1j* imJ) / (2 * np.sin((reJ + 1j * imJ+1) * np.pi)) ), - Max_imJ, + Max_imJ, epsrel = Prec_Goal)[0] + np.real(GPD0()) 
+        Integrand_Mellin_Barnes_c = convert_vec(Integrand_Mellin_Barnes)
+
+        return fixed_quad(lambda imJ : np.real(Integrand_Mellin_Barnes_c(reJ + 1j* imJ) / (2 * np.sin((reJ + 1j * imJ+1) * np.pi)) ), - Max_imJ, + Max_imJ, n=nquad)[0] + np.real(GPD0()) 
 
     def GFFj0(self, j: int, flv, ParaAll):
         """
