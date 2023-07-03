@@ -9,6 +9,7 @@ from scipy.integrate import quad, quad_vec, fixed_quad
 from scipy.special import gamma
 from Evolution import Coeff_Evo
 from Parameters import Flavor_Factor
+from joblib import Parallel, delayed
 
 CFF_trans =np.array([1*(2/3)**2, 2*(2/3)**2, 1*(1/3)**2, 2*(1/3)**2, 0])
 
