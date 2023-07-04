@@ -18,11 +18,14 @@ CFF_trans =np.array([1*(2/3)**2, 2*(2/3)**2, 1*(1/3)**2, 2*(1/3)**2, 0])
 # A helper function. This is needed to fit the format of fixed_quad
 def convert_vec(f):
     def f_converted(xs):
-        results = Parallel(n_jobs=-1)(delayed(f)(x) for x in xs)
+        results = Parallel(n_jobs=1)(delayed(f)(x) for x in xs)
+        # Later, change n_jobs=-1 to use multiple cores.
+        # Right now, -1 is not supported because of nested parallelism in the code
+
         return np.stack(results, axis=-1)
     return f_converted
 
-nquad = 10  # order of quadrature used in integration
+nquad = 1000  # order of quadrature used in integration
 ##############################################
 
 """
