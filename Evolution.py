@@ -15,7 +15,7 @@ Note:
 
 import numpy as np
 import rundec
-from scipy.special import psi
+from scipy.special import psi, gamma
 from typing import Tuple
 import numba
 from numba import vectorize, njit
@@ -356,9 +356,17 @@ def Moment_Evo(j: complex, nf: int, p: int, Q: float, ConfFlav: np.array) -> np.
 
     return EvoConfFlav
 
-def Moment_Evo_T(j: complex, nf: int, p: int, Q: float, ConfFlav: np.array) -> np.array:
+
+def CWilson(j: complex) -> complex:
+    return 2 ** (1+j) * gamma(5/2+j) / (gamma(3/2) * gamma(3+j))
+
+def CWilsonT(j: complex, nf: int) -> complex:
+    return np.array([3 * 2 ** (1+j) * gamma(5/2+j) / (gamma(3/2) * gamma(3+j)), 3 * 2 ** (1+j) * gamma(5/2+j) / (gamma(3/2) * gamma(3+j)), 3 * 2 ** (1+j) * gamma(5/2+j) / (gamma(3/2) * gamma(3+j)), 3 * 2 ** (1+j) * gamma(5/2+j) / nf / (gamma(3/2) * gamma(3+j)),  3 * 2 * 2 ** (1+j) * gamma(5/2+j) / (j + 3) / (gamma(3/2) * gamma(3+j))])
+
+
+def Moment_Evo_fast(j: complex, nf: int, p: int, Q: float, ConfFlav: np.array) -> np.array:
     """
-    Evolution of moments in the flavor space 
+    Evolution of WCs multiplying conf moments then transformed back into the flavor space 
 
     Args:
         uneolved conformal moments in flavor space ConfFlav = [ConfMoment_uV, ConfMoment_ubar, ConfMoment_dV, ConfMoment_dbar, ConfMoment_g] 
@@ -374,28 +382,70 @@ def Moment_Evo_T(j: complex, nf: int, p: int, Q: float, ConfFlav: np.array) -> n
         return shape (N, 5)
     """
 
-    # flavor_trans (5, 5) ConfFlav (N, 5)
-
-    # Transform the unevolved moments to evolution basis
-    # ConfEvoBasis = np.einsum('...j,j', flav_trans, ConfFlav) # originally, output will be (5), I want it to be (N, 5)
+    
     ConfEvoBasis = np.einsum('ij, ...j->...i', flav_trans, ConfFlav) # shape (N, 5)
 
 
     # Taking the non-singlet and singlet parts of the conformal moments
-    ConfNS = 3 * ConfEvoBasis[..., :3] # (N, 3)
-    ConfS = [3 * ConfEvoBasis[..., -2] / nf, 3 * 2 * ConfEvoBasis[..., -1] / (j + 3)] # (N, 2)
+    ConfNS = ConfEvoBasis[..., :3] # (N, 3)
+    ConfS = ConfEvoBasis[..., -2:] # (N, 2)
 
     # Calling evolution mulitiplier
     [evons, evoa] = evolop(j, nf, p, Q) # (N) and (N, 2, 2)
+    
+    
+    EvoWCNS = np.einsum('i,i...->i...', CWilson(j), evons)
+    EvoWCS = np.einsum('i,i...->i...', CWilson(j), evoa)
+    
+  
+    EvoConfNS = EvoWCNS[...,np.newaxis] * ConfNS
+    EvoConfS = np.einsum('...ij,...j->...i', EvoWCS, ConfS)
+    EvoConf = np.concatenate((EvoConfNS,EvoConfS),axis=-1)
+    EvoConfFlav = np.einsum('...ij,...j->...i', inv_flav_trans, EvoConf)
+    
+    
+    
+
+    return EvoConfFlav
+
+def Moment_Evo_0(j: complex, nf: int, p: int, Q: float, ConfFlav: np.array) -> np.array:
+    """
+    j = 0 pole piece, should find a less cumbersome way to handle this
+    """
+
+    
+    ConfEvoBasis = np.einsum('ij, ...j->...i', flav_trans, ConfFlav) # shape (N, 5)
+
+
+    # Taking the non-singlet and singlet parts of the conformal moments
+    ConfNS = ConfEvoBasis[..., :3] # (N, 3)
+    ConfS = ConfEvoBasis[..., -2:] # (N, 2)
+
+    # Calling evolution mulitiplier
+    [evons, evoa] = evolop(j, nf, p, Q) # (N) and (N, 2, 2)
+    
+    
 
     # non-singlet part evolves multiplicatively
     EvoConfNS = evons[..., np.newaxis] * ConfNS # (N, 3)
     # singlet part mixes with the gluon
     EvoConfS = np.einsum('...ij, ...j->...i', evoa, ConfS) # (N, 2)
+    
 
     # Recombing the non-singlet and singlet parts
     EvoConf = np.concatenate((EvoConfNS, EvoConfS), axis=-1) # (N, 5)
+    # Combine with Wilson coefficients
+    #print(CWilsonT(j,nf))
+    #print(EvoConf)
+    #print("Wilson coef. shape is %.2f", CWilsonT(j,nf).shape)
+    #print("Conf. Moments shape is %.2f", EvoConf.shape)
+    EvoConfwWC = CWilson(j)*EvoConf #(N,5)
+    #print("MB integrand shape is %2f",EvoConfwWC.shape)
     # Inverse transform the evolved moments back to the flavor basis
-    EvoConfFlav_T = np.einsum('...ij, ...j->...i', inv_flav_trans, EvoConf) #(N, 5)
+    EvoConfFlav = np.einsum('...ij, ...j->...i', inv_flav_trans, EvoConfwWC) #(N, 5)
+    #print('Wilson co shape is',CWilsonDVCS.shape)
+    #EvoConfFlavwWC = np.einsum('i,i...->i...',CWilson(j),EvoConfFlav)
 
-    return EvoConfFlav_T
+    return EvoConfFlav
+
+
