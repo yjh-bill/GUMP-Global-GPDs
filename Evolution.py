@@ -339,6 +339,8 @@ def evolop(j: complex, nf: int, p: int, Q: float):
 
     return [evola0NS, evola0] # (N) and (N, 2, 2)
 
+evolop_cached = np_cache(evolop)
+
 def Moment_Evo(j: complex, nf: int, p: int, Q: float, ConfFlav: np.array) -> np.array:
     """
     Evolution of moments in the flavor space 
@@ -437,7 +439,6 @@ def CWilsonT(j: complex, nf: int) -> complex:
     return np.array([3 * 2 ** (1+j) * gamma(5/2+j) / (gamma(3/2) * gamma(3+j)), 3 * 2 ** (1+j) * gamma(5/2+j) / (gamma(3/2) * gamma(3+j)), 3 * 2 ** (1+j) * gamma(5/2+j) / (gamma(3/2) * gamma(3+j)), 3 * 2 ** (1+j) * gamma(5/2+j) / nf / (gamma(3/2) * gamma(3+j)),  3 * 2 * 2 ** (1+j) * gamma(5/2+j) / (j + 3) / (gamma(3/2) * gamma(3+j))])
 
 
-@np_cache
 def Moment_Evo_fast(j: complex, nf: int, p: int, Q: float, ConfFlav: np.array) -> np.array:
     """
     Evolution of WCs multiplying conf moments then transformed back into the flavor space 
@@ -463,7 +464,7 @@ def Moment_Evo_fast(j: complex, nf: int, p: int, Q: float, ConfFlav: np.array) -
     ConfS = ConfEvoBasis[..., -2:] # (N, 2)
 
     # Calling evolution mulitiplier
-    [evons, evoa] = evolop(j, nf, p, Q) # (N) and (N, 2, 2)
+    [evons, evoa] = evolop_cached(j, nf, p, Q) # (N) and (N, 2, 2)
     
     EvoWCNS = np.einsum('i,i...->i...', CWilson(j), evons)
     EvoWCS = np.einsum('i,i...->i...', CWilson(j), evoa)
