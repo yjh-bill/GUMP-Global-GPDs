@@ -289,6 +289,7 @@ def projectors(n: complex, nf: int, p: int, prty: int = 1) -> Tuple[np.ndarray, 
     pr = np.stack([prp, prm], axis=-3) # (N, 2, 2, 2)
     return lam, pr # (N, 2) and (N, 2, 2, 2)
 
+@np_cache
 def evolop(j: complex, nf: int, p: int, Q: float):
     """
     GPD evolution operator E(j, nf, Q)[a,b].
@@ -338,8 +339,6 @@ def evolop(j: complex, nf: int, p: int, Q: float):
     evola0NS = R**(-gam0NS/b0) #(N)
 
     return [evola0NS, evola0] # (N) and (N, 2, 2)
-
-evolop_cached = np_cache(evolop)
 
 def Moment_Evo(j: complex, nf: int, p: int, Q: float, ConfFlav: np.array) -> np.array:
     """
@@ -464,7 +463,7 @@ def Moment_Evo_fast(j: complex, nf: int, p: int, Q: float, ConfFlav: np.array) -
     ConfS = ConfEvoBasis[..., -2:] # (N, 2)
 
     # Calling evolution mulitiplier
-    [evons, evoa] = evolop_cached(j, nf, p, Q) # (N) and (N, 2, 2)
+    [evons, evoa] = evolop(j, nf, p, Q) # (N) and (N, 2, 2)
     
     EvoWCNS = np.einsum('i,i...->i...', CWilson(j), evons)
     EvoWCS = np.einsum('i,i...->i...', CWilson(j), evoa)
