@@ -17,6 +17,36 @@ from scipy.special import psi, gamma
 from typing import Tuple
 import numba
 from numba import vectorize, njit
+from functools import lru_cache, wraps
+
+
+
+################################################################
+def np_cache(function):
+    @lru_cache(maxsize=None)
+    def cached_wrapper(*args, **kwargs):
+
+        args = [np.array(a) if isinstance(a, tuple) else a for a in args]
+        kwargs = {
+            k: np.array(v) if isinstance(v, tuple) else v for k, v in kwargs.items()
+        }
+
+        return function(*args, **kwargs)
+
+    @wraps(function)
+    def wrapper(*args, **kwargs):
+        args = [tuple(a) if isinstance(a, np.ndarray) else a for a in args]
+        kwargs = {
+            k: tuple(v) if isinstance(v, np.ndarray) else v for k, v in kwargs.items()
+        }
+        return cached_wrapper(*args, **kwargs)
+
+    wrapper.cache_info = cached_wrapper.cache_info
+    wrapper.cache_clear = cached_wrapper.cache_clear
+
+    return wrapper
+
+################################################################
 
 """
 ***********************QCD constants***************************************
@@ -407,6 +437,7 @@ def CWilsonT(j: complex, nf: int) -> complex:
     return np.array([3 * 2 ** (1+j) * gamma(5/2+j) / (gamma(3/2) * gamma(3+j)), 3 * 2 ** (1+j) * gamma(5/2+j) / (gamma(3/2) * gamma(3+j)), 3 * 2 ** (1+j) * gamma(5/2+j) / (gamma(3/2) * gamma(3+j)), 3 * 2 ** (1+j) * gamma(5/2+j) / nf / (gamma(3/2) * gamma(3+j)),  3 * 2 * 2 ** (1+j) * gamma(5/2+j) / (j + 3) / (gamma(3/2) * gamma(3+j))])
 
 
+@np_cache
 def Moment_Evo_fast(j: complex, nf: int, p: int, Q: float, ConfFlav: np.array) -> np.array:
     """
     Evolution of WCs multiplying conf moments then transformed back into the flavor space 
