@@ -50,8 +50,8 @@ def ParaManager_Unp(Paralst: np.array):
     R_Eu_xi4 = 0
     R_Ed_xi4 = 0
 
-    R_Hg_xi2 = 0
-    R_Eg_xi2 = 0
+    #R_Hg_xi2 = 0
+    #R_Eg_xi2 = 0
     R_Hg_xi4 = 0
     R_Eg_xi4 = 0
 

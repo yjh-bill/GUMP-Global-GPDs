@@ -1511,8 +1511,8 @@ def cost_dvmp(Norm_HuV,    alpha_HuV,    beta_HuV,    alphap_HuV,
    # cost_DVrhoPZEUS_xBtQ = np.array(list(pool.map(partial(DVrhoPxsec_cost_xBtQ, Para_Unp = Para_Unp_all), DVrhoPZEUSxsec_group_data)))
    # cost_DVrhoPZEUSxsec = np.sum(cost_DVrhoPZEUS_xBtQ)
     
-   # cost_DVrhoPH1_xBtQ = np.array(list(pool.map(partial(DVrhoPxsec_cost_xBtQ, Para_Unp = Para_Unp_all), DVrhoPH1xsec_group_data)))
-   # cost_DVrhoPH1xsec = np.sum(cost_DVrhoPH1_xBtQ)
+    cost_DVrhoPH1_xBtQ = np.array(list(pool.map(partial(DVrhoPxsec_cost_xBtQ, Para_Unp = Para_Unp_all), DVrhoPH1xsec_group_data)))
+    cost_DVrhoPH1xsec = np.sum(cost_DVrhoPH1_xBtQ)
     
    # cost_DVphiPZEUS_xBtQ = np.array(list(pool.map(partial(DVphiPxsec_cost_xBtQ, Para_Unp = Para_Unp_all), DVphiPZEUSxsec_group_data)))
    # cost_DVphiPZEUSxsec = np.sum(cost_DVphiPZEUS_xBtQ)
@@ -1520,15 +1520,15 @@ def cost_dvmp(Norm_HuV,    alpha_HuV,    beta_HuV,    alphap_HuV,
    # cost_DVphiPH1_xBtQ = np.array(list(pool.map(partial(DVphiPxsec_cost_xBtQ, Para_Unp = Para_Unp_all), DVphiPH1xsec_group_data)))
    # cost_DVphiPH1xsec = np.sum(cost_DVphiPH1_xBtQ)
    
-    cost_DVjpsiPZEUS_xBtQ = np.array(list(pool.map(partial(DVjpsiPxsec_cost_xBtQ, Para_Unp = Para_Unp_all), DVJpsiPZEUSxsec_group_data)))
-    cost_DVjpsiPZEUSxsec = np.sum(cost_DVjpsiPZEUS_xBtQ)
+   # cost_DVjpsiPZEUS_xBtQ = np.array(list(pool.map(partial(DVjpsiPxsec_cost_xBtQ, Para_Unp = Para_Unp_all), DVJpsiPZEUSxsec_group_data)))
+   # cost_DVjpsiPZEUSxsec = np.sum(cost_DVjpsiPZEUS_xBtQ)
     
-    cost_DVjpsiPH1_xBtQ = np.array(list(pool.map(partial(DVjpsiPxsec_cost_xBtQ, Para_Unp = Para_Unp_all), DVJpsiPH1xsec_group_data)))
-    cost_DVjpsiPH1xsec = np.sum(cost_DVjpsiPH1_xBtQ)
+   # cost_DVjpsiPH1_xBtQ = np.array(list(pool.map(partial(DVjpsiPxsec_cost_xBtQ, Para_Unp = Para_Unp_all), DVJpsiPH1xsec_group_data)))
+   # cost_DVjpsiPH1xsec = np.sum(cost_DVjpsiPH1_xBtQ)
 
     
 
-    return  cost_DVjpsiPZEUSxsec + cost_DVjpsiPH1xsec # cost_DVrhoPZEUSxsec + cost_DVrhoPH1xsec + cost_DVphiPZEUSxsec + cost_DVphiPH1xsec
+    return  cost_DVrhoPH1xsec
 
 def dvmp_fit(Paralst_Unp):
 
@@ -1557,8 +1557,8 @@ def dvmp_fit(Paralst_Unp):
                                                R_Eu_xi4 = R_Eu_xi4_Init,     R_Ed_xi4 = R_Ed_xi4_Init,        R_Eg_xi4 = R_Eg_xi4_Init,     bexp_HSea = bexp_HSea_Init)
     fit_dvmp.errordef = 1
 
-    fit_dvmp.limits['bexp_HSea']  = (0, 10)
-    #fit_dvmp.fixed['bexp_HSea'] = True
+    #fit_dvmp.limits['bexp_HSea']  = (0, 10)
+    fit_dvmp.fixed['bexp_HSea'] = True
     
 
     fit_dvmp.fixed['Norm_HuV'] = True
@@ -1588,7 +1588,7 @@ def dvmp_fit(Paralst_Unp):
     
 
     fit_dvmp.limits['Norm_Hg']=(0,10)
-    fit_dvmp.limits['alpha_Hg']=(0,10)
+    fit_dvmp.limits['alpha_Hg']=(1.01,2)
     #fit_dvmp.limits['beta_Hg']=(0.5,10)
 
     #fit_dvmp.fixed['Norm_Hg'] = True
@@ -1608,10 +1608,10 @@ def dvmp_fit(Paralst_Unp):
     fit_dvmp.fixed['R_E_Sea'] = True    
     fit_dvmp.fixed['R_Hu_xi2'] = True
     fit_dvmp.fixed['R_Hd_xi2'] = True     
-    fit_dvmp.fixed['R_Hg_xi2'] = True
+    #fit_dvmp.fixed['R_Hg_xi2'] = True
     fit_dvmp.fixed['R_Eu_xi2'] = True
     fit_dvmp.fixed['R_Ed_xi2'] = True 
-    fit_dvmp.fixed['R_Eg_xi2'] = True
+    #fit_dvmp.fixed['R_Eg_xi2'] = True
     
 
     fit_dvmp.fixed['R_Hg_xi4'] = True
@@ -1635,7 +1635,7 @@ def dvmp_fit(Paralst_Unp):
     fit_dvmp.migrad()
     fit_dvmp.hesse()
 
-    ndof_dvmp = len(DVJpsiPZEUSxsec_data.index) + len(DVJpsiPH1xsec_data.index)  - fit_dvmp.nfit 
+    ndof_dvmp = len(DVrhoPH1xsec_data.index)  - fit_dvmp.nfit 
 
     time_end = time.time() -time_start
 
@@ -1661,7 +1661,7 @@ if __name__ == '__main__':
     Paralst_Unp     = [4.92252245341075, 0.21632833928300776, 3.228525762889928, 2.347470994624827, 0.16344460105600744, 1.135739437288775, 6.893895640954224, 0.15, 3.358767931921898, 0.1842893653407356, 4.417802345266761, 3.4816671934041685, 0.2491737223289409, 1.0519258916411531, 6.553873836594824, 2.8642810381756982, 1.0523058580968585, 7.412779706371915, 0.15, 0.1813228421702434, 0.9068471909677753, 1.1018931174030364, 0.4607676086634599, -0.22341404954304522, 0.7683213780361391, 0.22948701913308733, -2.638627981453611, 0.0, 0.7985103392773935, 3.404262017724412, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 3.44764738950069]
     Paralst_Pol     = [4.833430384423373, -0.26355746727810136, 3.1855567245326317, 2.1817250267982997, 0.06994083000560514, 0.5376473088622284, 4.22898219488582, 0.15, -0.663583721889865, 0.24767388786943867, 3.5722668493718626, 0.5420415127277624, -0.08640413690298866, 0.4946733452347538, 2.553713733867575, 0.24307061469378405, 0.6309890923077655, 2.716624295877619, 0.15, 7.99299605623125, 0.799997370438831, 6.415448025778247, 2.0758963463111515, -2.407059919688728, 37.65971219196447, 0.24589373380232807, 1.6561364171210822, 0.0, 2.6840962695831894, 37.58453653636456, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 9.852441955678458]
 
-   # fit_dvmp = dvmp_fit(Paralst_Unp)
+    fit_dvmp = dvmp_fit(Paralst_Unp)
 
     """
 
@@ -1679,7 +1679,7 @@ if __name__ == '__main__':
     
     """
 
-    fit_off_forward = fast_off_forward_fit(Paralst_Unp, Paralst_Pol)
+   # fit_off_forward = fast_off_forward_fit(Paralst_Unp, Paralst_Pol)
 
     
     #print(fast_cost_off_forward_test(4.92252245341075, 0.21632833928300776, 3.228525762889928, 2.347470994624827, 0.16344460105600744, 1.135739437288775, 6.893895640954224, 0.15, 3.358767931921898, 0.1842893653407356, 4.417802345266761, 3.4816671934041685, 0.2491737223289409, 1.0519258916411531, 6.553873836594824, 2.8642810381756982, 1.0523058580968585, 7.412779706371915, 0.15, 0.1813228421702434, 0.9068471909677753, 1.1018931174030364, 0.4607676086634599, -0.22341404954304522, 0.7683213780361391, 0.22948701913308733, -2.638627981453611, 0.0, 0.7985103392773935, 3.404262017724412, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 3.44764738950069, 4.833430384423373, -0.26355746727810136, 3.1855567245326317, 2.1817250267982997, 0.06994083000560514, 0.5376473088622284, 4.22898219488582, 0.15, -0.663583721889865, 0.24767388786943867, 3.5722668493718626, 0.5420415127277624, -0.08640413690298866, 0.4946733452347538, 2.553713733867575, 0.24307061469378405, 0.6309890923077655, 2.716624295877619, 0.15, 7.99299605623125, 0.799997370438831, 6.415448025778247, 2.0758963463111515, -2.407059919688728, 37.65971219196447, 0.24589373380232807, 1.6561364171210822, 0.0, 2.6840962695831894, 37.58453653636456, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 9.852441955678458))

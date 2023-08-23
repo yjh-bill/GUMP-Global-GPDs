@@ -7,7 +7,7 @@ import numpy as np
 from mpmath import mp, hyp2f1
 from scipy.integrate import quad, quad_vec, fixed_quad
 from scipy.special import gamma
-from Evolution import Moment_Evo, Moment_Evo_fast, Moment_Evo_0
+from Evolution import Moment_Evo, Moment_Evo_fast, Moment_Evo_T_fast
 
 CFF_trans =np.array([1*(2/3)**2, 2*(2/3)**2, 1*(1/3)**2, 2*(1/3)**2, 0])
 
@@ -580,35 +580,24 @@ class GPDobserv (object) :
             
             
             return np.einsum('j, ...j', CFF_trans, EvoConf_Wilson) 
-        
+        '''
         def Integrand_Mellin_Barnes_CFF_0():
             
 
-            '''
-            ConfFlav = np.array( list(map(lambda paraset: Moment_Sum(j, self.t, paraset), Para_Forward)) )
-            ConfFlav_xi2 = np.array( list(map(lambda paraset: Moment_Sum(j, self.t, paraset), Para_xi2)) )
-            ConfFlav_xi4 = np.array( list(map(lambda paraset: Moment_Sum(j, self.t, paraset), Para_xi4)) )
-            '''
+            
             ConfFlav     = Moment_Sum(0, self.t, Para_Forward) #(N, 5)
             ConfFlav_xi2 = Moment_Sum(0, self.t, Para_xi2)
-            '''
-            # Removing xi^4 terms
-            ConfFlav_xi4 = Moment_Sum(j, self.t, Para_xi4)
-            '''
+            
 
             # shape (N, 5)
-            """
-            # Removing xi^4 terms
-            EvoConf_Wilson = (CWilson(j) * Moment_Evo(j, NFEFF, self.p, self.Q, ConfFlav) \
-                                + CWilson(j+2) * Moment_Evo(j+2, NFEFF, self.p, self.Q, ConfFlav_xi2) \
-                                + CWilson(j+4) * Moment_Evo(j+4, NFEFF, self.p, self.Q, ConfFlav_xi4))
-            """
+            
             EvoConf_Wilson = (Moment_Evo_0(0, NFEFF, self.p, self.Q, ConfFlav) \
                                 + Moment_Evo_0(2, NFEFF, self.p, self.Q, ConfFlav_xi2))
             
             
             return np.einsum('j, ...j', CFF_trans, EvoConf_Wilson) # shape (N)
-
+        '''
+        
         def Integrand_CFF(imJ: complex):
             # mask = (self.p==1) # assume p can only be either 1 or -1
 
@@ -636,7 +625,7 @@ class GPDobserv (object) :
             if self.p==1:
                 result = np.ones_like(self.p) * 0
             else:
-                result = np.ones_like(self.p) * self.xi ** (- 1) * Integrand_Mellin_Barnes_CFF_0() *(2)
+                result = np.ones_like(self.p) * self.xi ** (- 1) * Integrand_Mellin_Barnes_CFF(np.array([0])) *(2)
 
             return result
 
@@ -695,8 +684,8 @@ class GPDobserv (object) :
                                     + CWilson(j+2) * Moment_Evo(j+2, NFEFF, self.p, self.Q, ConfFlav_xi2) \
                                     + CWilson(j+4) * Moment_Evo(j+4, NFEFF, self.p, self.Q, ConfFlav_xi4))
                 """
-                EvoConf_Wilson = (np.einsum('j, ...j->...j', CWilsonT(j, NFEFF), Moment_Evo(j, NFEFF, self.p, self.Q, ConfFlav)) \
-                                    + np.einsum('j, ...j->...j', CWilsonT(j+2, NFEFF), Moment_Evo(j+2, NFEFF, self.p, self.Q, ConfFlav_xi2)))
+                EvoConf_Wilson = (Moment_Evo_T_fast(j, NFEFF, self.p, self.Q, ConfFlav) \
+                                    + Moment_Evo_T_fast(j+2, NFEFF, self.p, self.Q, ConfFlav_xi2))
 
                 if(meson == 1):
                     return np.einsum('j, ...j', TFF_rho_trans, EvoConf_Wilson)
@@ -739,11 +728,11 @@ class GPDobserv (object) :
                 if self.p==1:
                     result = np.ones_like(self.p) * 0
                 else:
-                    result = np.ones_like(self.p) * self.xi ** (- 1) * Integrand_Mellin_Barnes_TFF(0) *(2)
+                    result = np.ones_like(self.p) * self.xi ** (- 1) * Integrand_Mellin_Barnes_TFF(np.array([0])) *(2)
 
                 return result
 
-            return quad_vec(Integrand_TFF, - Max_imJ, + Max_imJ, epsrel = Prec_Goal)[0] + TFFj0()
+            return fixed_quad(Integrand_TFF, - Max_imJ, + Max_imJ, n=500)[0] + TFFj0()
 
             '''
             if (self.p == 1):
