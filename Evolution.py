@@ -17,6 +17,36 @@ from scipy.special import psi, gamma
 from typing import Tuple
 import numba
 from numba import vectorize, njit
+from functools import lru_cache, wraps
+
+
+
+################################################################
+def np_cache(function):
+    @lru_cache(maxsize=None)
+    def cached_wrapper(*args, **kwargs):
+
+        args = [np.array(a) if isinstance(a, tuple) else a for a in args]
+        kwargs = {
+            k: np.array(v) if isinstance(v, tuple) else v for k, v in kwargs.items()
+        }
+
+        return function(*args, **kwargs)
+
+    @wraps(function)
+    def wrapper(*args, **kwargs):
+        args = [tuple(a) if isinstance(a, np.ndarray) else a for a in args]
+        kwargs = {
+            k: tuple(v) if isinstance(v, np.ndarray) else v for k, v in kwargs.items()
+        }
+        return cached_wrapper(*args, **kwargs)
+
+    wrapper.cache_info = cached_wrapper.cache_info
+    wrapper.cache_clear = cached_wrapper.cache_clear
+
+    return wrapper
+
+################################################################
 
 """
 ***********************QCD constants***************************************
@@ -259,6 +289,7 @@ def projectors(n: complex, nf: int, p: int, prty: int = 1) -> Tuple[np.ndarray, 
     pr = np.stack([prp, prm], axis=-3) # (N, 2, 2, 2)
     return lam, pr # (N, 2) and (N, 2, 2, 2)
 
+@np_cache
 def evolop(j: complex, nf: int, p: int, Q: float):
     """
     GPD evolution operator E(j, nf, Q)[a,b].
