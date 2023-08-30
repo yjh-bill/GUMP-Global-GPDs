@@ -84,8 +84,8 @@ def dsigma_rho_dt(y: float, xB: float, t: float, Q: float, phi: float, HTFF_rho:
     unpolarized nucleon to unpolarized nucleon
     
     """
-    return prefac_rho(y, xB, t, Q, phi) * ((4 * (1 - xB) * (1 - xB * (m2(xB, Q, t) - t) / (Q ** 2)) - (m2(xB, Q, t) * eps(xB, Q) ** 2 / (M_p ** 2))) / ((2 - xB - (xB * (m2(xB, Q, t) - t) / Q ** 2)) ** 2) * (HTFF_rho - ((xB ** 2 * ((1 + (m2(xB, Q, t) - t) / Q ** 2) ** 2) + 4 * xB * t / Q ** 2) * ETFF_rho / (4 * (1 - xB) * (1 - xB * (m2(xB, Q, t) - t) / Q ** 2) - (m2(xB, Q, t) * eps(xB,Q) ** 2 / M_p ** 2)))) * Conjugate((HTFF_rho - ((xB ** 2 * ((1 + (m2(xB, Q, t) - t) / Q ** 2) ** 2) + 4 * xB * t / Q ** 2) * ETFF_rho / (4 * (1 - xB) * (1 - xB * (m2(xB, Q, t) - t) / Q ** 2) - (m2(xB, Q, t) * eps(xB,Q) ** 2 / M_p ** 2))))) + (K(xB, Q, t) ** 2 * ETFF_rho * Conjugate(ETFF_rho) / 4 / M_p ** 2 / ((1 - xB) * (1 - xB * (m2(xB, Q, t) - t) / Q ** 2) - (m2(xB, Q, t) * eps(xB, Q) ** 2 / 4 / M_p ** 2))))
-    
+    result= prefac_rho(y, xB, t, Q, phi) * ((4 * (1 - xB) * (1 - xB * (m2(xB, Q, t) - t) / (Q ** 2)) - (m2(xB, Q, t) * eps(xB, Q) ** 2 / (M_p ** 2))) / ((2 - xB - (xB * (m2(xB, Q, t) - t) / Q ** 2)) ** 2) * (HTFF_rho - ((xB ** 2 * ((1 + (m2(xB, Q, t) - t) / Q ** 2) ** 2) + 4 * xB * t / Q ** 2) * ETFF_rho / (4 * (1 - xB) * (1 - xB * (m2(xB, Q, t) - t) / Q ** 2) - (m2(xB, Q, t) * eps(xB,Q) ** 2 / M_p ** 2)))) * Conjugate((HTFF_rho - ((xB ** 2 * ((1 + (m2(xB, Q, t) - t) / Q ** 2) ** 2) + 4 * xB * t / Q ** 2) * ETFF_rho / (4 * (1 - xB) * (1 - xB * (m2(xB, Q, t) - t) / Q ** 2) - (m2(xB, Q, t) * eps(xB,Q) ** 2 / M_p ** 2))))) + (K(xB, Q, t) ** 2 * ETFF_rho * Conjugate(ETFF_rho) / 4 / M_p ** 2 / ((1 - xB) * (1 - xB * (m2(xB, Q, t) - t) / Q ** 2) - (m2(xB, Q, t) * eps(xB, Q) ** 2 / 4 / M_p ** 2))))
+    return Real(result) # need this to suppress the type conversion warning
    
 
 @vectorize(["float64(float64,float64,float64,float64,float64,complex128,complex128)"])    
@@ -96,8 +96,8 @@ def dsigma_phi_dt(y: float, xB: float, t: float, Q: float, phi: float, HTFF_phi:
     unpolarized nucleon to unpolarized nucleon
     
     """
-    return prefac_phi(y, xB, t, Q, phi) * ((4 * (1 - xB) * (1 - xB * (m2(xB, Q, t) - t) / (Q ** 2)) - (m2(xB, Q, t) * eps(xB, Q) ** 2 / (M_p ** 2))) / ((2 - xB - (xB * (m2(xB, Q, t) - t) / Q ** 2)) ** 2) * (HTFF_phi - ((xB ** 2 * ((1 + (m2(xB, Q, t) - t) / Q ** 2) ** 2) + 4 * xB * t / Q ** 2) * ETFF_phi / (4 * (1 - xB) * (1 - xB * (m2(xB, Q, t) - t) / Q ** 2) - (m2(xB, Q, t) * eps(xB,Q) ** 2 / M_p ** 2)))) * Conjugate((HTFF_phi - ((xB ** 2 * ((1 + (m2(xB, Q, t) - t) / Q ** 2) ** 2) + 4 * xB * t / Q ** 2) * ETFF_phi / (4 * (1 - xB) * (1 - xB * (m2(xB, Q, t) - t) / Q ** 2) - (m2(xB, Q, t) * eps(xB,Q) ** 2 / M_p ** 2))))) + (K(xB, Q, t) ** 2 * ETFF_phi * Conjugate(ETFF_phi) / 4 / M_p ** 2 / ((1 - xB) * (1 - xB * (m2(xB, Q, t) - t) / Q ** 2) - (m2(xB, Q, t) * eps(xB, Q) ** 2 / 4 / M_p ** 2))))
-    
+    result = prefac_phi(y, xB, t, Q, phi) * ((4 * (1 - xB) * (1 - xB * (m2(xB, Q, t) - t) / (Q ** 2)) - (m2(xB, Q, t) * eps(xB, Q) ** 2 / (M_p ** 2))) / ((2 - xB - (xB * (m2(xB, Q, t) - t) / Q ** 2)) ** 2) * (HTFF_phi - ((xB ** 2 * ((1 + (m2(xB, Q, t) - t) / Q ** 2) ** 2) + 4 * xB * t / Q ** 2) * ETFF_phi / (4 * (1 - xB) * (1 - xB * (m2(xB, Q, t) - t) / Q ** 2) - (m2(xB, Q, t) * eps(xB,Q) ** 2 / M_p ** 2)))) * Conjugate((HTFF_phi - ((xB ** 2 * ((1 + (m2(xB, Q, t) - t) / Q ** 2) ** 2) + 4 * xB * t / Q ** 2) * ETFF_phi / (4 * (1 - xB) * (1 - xB * (m2(xB, Q, t) - t) / Q ** 2) - (m2(xB, Q, t) * eps(xB,Q) ** 2 / M_p ** 2))))) + (K(xB, Q, t) ** 2 * ETFF_phi * Conjugate(ETFF_phi) / 4 / M_p ** 2 / ((1 - xB) * (1 - xB * (m2(xB, Q, t) - t) / Q ** 2) - (m2(xB, Q, t) * eps(xB, Q) ** 2 / 4 / M_p ** 2))))
+    return Real(result) # need this to suppress the type conversion warning
     
     
     
@@ -112,4 +112,5 @@ def dsigma_Jpsi_dt(y: float, xB: float, t: float, Q: float, phi: float, HTFF_jps
     
     #return prefac_jpsi(y, xB, t, Q, phi) * ((4 * (1 - xB) * (1 - xB * (m2(xB, Q, t) - t) / (Q ** 2)) - (m2(xB, Q, t) * eps(xB, Q) ** 2 / (M_p ** 2))) / ((2 - xB - (xB * (m2(xB, Q, t) - t) / Q ** 2)) ** 2) * (HTFF_jpsi - ((xB ** 2 * ((1 + (m2(xB, Q, t) - t) / Q ** 2) ** 2) + 4 * xB * t / Q ** 2) * ETFF_jpsi / (4 * (1 - xB) * (1 - xB * (m2(xB, Q, t) - t) / Q ** 2) - (m2(xB, Q, t) * eps(xB,Q) ** 2 / M_p ** 2)))) * Conjugate((HTFF_jpsi - ((xB ** 2 * ((1 + (m2(xB, Q, t) - t) / Q ** 2) ** 2) + 4 * xB * t / Q ** 2) * ETFF_jpsi / (4 * (1 - xB) * (1 - xB * (m2(xB, Q, t) - t) / Q ** 2) - (m2(xB, Q, t) * eps(xB,Q) ** 2 / M_p ** 2))))) + (K(xB, Q, t) ** 2 * ETFF_jpsi * Conjugate(ETFF_jpsi) / 4 / M_p ** 2 / ((1 - xB) * (1 - xB * (m2(xB, Q, t) - t) / Q ** 2) - (m2(xB, Q, t) * eps(xB, Q) ** 2 / 4 / M_p ** 2))))
 
-    return  ((1 - y) / (1 - y - y**2 / 2) + M_jpsi**2 / Q**2) * gevtonb * 4 * 4 * ev.CF**2 * 16 * np.pi**2 * alphaEM * ev.AlphaS(2, 2, np.sqrt(Q**2 + M_jpsi**2))**2 * (1 - (xB / (2 - xB))**2) * Q**2 * HTFF_jpsi * Conjugate(HTFF_jpsi) / ev.NC**2 / 9 / (M_jpsi**2 + Q**2)**2 / ((M_jpsi**2 + Q**2) / xB - Q**2 - M_p**2) / np.sqrt(((M_jpsi**2 + Q**2) / xB - Q**2)**2 + Q**4 + M_p**4 + 2 * ((M_jpsi**2 + Q**2) / xB - Q**2) * Q**2 + 2 * Q**2 * M_p**2 - 2 * ((M_jpsi**2 + Q**2) / xB - Q**2) * M_p**2)
+    result = ((1 - y) / (1 - y - y**2 / 2) + M_jpsi**2 / Q**2) * gevtonb * 4 * 4 * ev.CF**2 * 16 * np.pi**2 * alphaEM * ev.AlphaS(2, 2, np.sqrt(Q**2 + M_jpsi**2))**2 * (1 - (xB / (2 - xB))**2) * Q**2 * HTFF_jpsi * Conjugate(HTFF_jpsi) / ev.NC**2 / 9 / (M_jpsi**2 + Q**2)**2 / ((M_jpsi**2 + Q**2) / xB - Q**2 - M_p**2) / np.sqrt(((M_jpsi**2 + Q**2) / xB - Q**2)**2 + Q**4 + M_p**4 + 2 * ((M_jpsi**2 + Q**2) / xB - Q**2) * Q**2 + 2 * Q**2 * M_p**2 - 2 * ((M_jpsi**2 + Q**2) / xB - Q**2) * M_p**2)
+    return Real(result)
