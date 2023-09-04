@@ -1164,7 +1164,7 @@ def off_forward_fit(Paralst_Unp, Paralst_Pol):
     fit_off_forward.migrad()
     fit_off_forward.hesse()
 
-    ndof_off_forward = len(DVCSxsec_data.index) + len(DVCSxsec_HERA_data.index) + len(DVrhoPH1xsec_data.index) - fit_off_forward.nfit 
+    ndof_off_forward = len(DVCSxsec_data.index) + len(DVCS_HERA_data.index) + len(DVrhoPH1xsec_data.index) - fit_off_forward.nfit 
 
     time_end = time.time() -time_start
 
