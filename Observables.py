@@ -482,9 +482,10 @@ class GPDobserv (object) :
                                 + CWilson(j+2) * Moment_Evo(j+2, NFEFF, self.p, self.Q, ConfFlav_xi2) \
                                 + CWilson(j+4) * Moment_Evo(j+4, NFEFF, self.p, self.Q, ConfFlav_xi4))
             """
-            EvoConf_Wilson = (CWilson(j) * Moment_Evo(j, NFEFF, self.p, self.Q, ConfFlav) \
-                                + CWilson(j+2) * Moment_Evo(j+2, NFEFF, self.p, self.Q, ConfFlav_xi2))
-
+            EvoConf_Wilson = (np.einsum('...ij, ...j->...i',Coeff_Evo(j, NFEFF, self.p, self.Q,CWilson(j)*np.eye(Flavor_Factor)), ConfFlav) \
+                                + np.einsum('...ij, ...j->...i', Coeff_Evo(j+2, NFEFF, self.p, self.Q, CWilson(j+2)*np.eye(Flavor_Factor)), ConfFlav_xi2))
+            # Here, CWilson(j) is a scalar, but Coeff_Evo only takes a matrix. Therefore, we multiply by np.eye
+            
             return np.einsum('j, ...j', CFF_trans, EvoConf_Wilson) # shape (N)
 
         def Integrand_CFF(imJ: complex):
@@ -529,223 +530,7 @@ class GPDobserv (object) :
         '''
     
     
-    
-    def CFF_fast(self, ParaAll):
-        """
-        CFF using fixed_quad
-        Args:
-            ParaAll = [Para_Forward, Para_xi2, Para_xi4]
 
-            Para_Forward = [Para_Forward_uV, Para_Forward_ubar, Para_Forward_dV, Para_Forward_dbar, Para_Forward_g]
-            Para_Forward_i: forward parameter sets for valence u quark (uV), sea u quark (ubar), valence d quark (dV), sea d quark (dbar) and gluon (g)
-            Para_xi2 = [Para_xi2_uV, Para_xi2_ubar, Para_xi2_dV, Para_xi2_dbar, Para_xi2_g]
-            Para_xi2_i: xi^2 parameter sets for valence u quark (uV), sea u quark (ubar), valence d quark (dV), sea d quark (dbar) and gluon (g)
-            Para_xi4 = [Para_xi4_uV, Para_xi4_ubar, Para_xi4_dV, Para_xi4_dbar, Para_xi4_g]
-            Para_xi4_i: xi^4 parameter sets for valence u quark (uV), sea u quark (ubar), valence d quark (dV), sea d quark (dbar) and gluon (g)
-
-        Returns:
-            CFF \mathcal{F}(xi, t) = Q_u^2 F_u + Q_d^2 F_d
-        """
-        
-        Para_Forward = ParaAll[..., 0, :, :, :] 
-        Para_xi2     = ParaAll[..., 1, :, :, :]
-        '''
-        # Removing xi^4 terms
-        Para_xi4     = ParaAll[..., 2, :, :, :]
-        '''
-
-        # The contour for Mellin-Barnes integral in terms of j not n.
-        reJ = Mellin_Barnes_intercept 
-        Max_imJ = Mellin_Barnes_cutoff 
-
-        def Integrand_Mellin_Barnes_CFF(j: complex):
-            
-
-            '''
-            ConfFlav = np.array( list(map(lambda paraset: Moment_Sum(j, self.t, paraset), Para_Forward)) )
-            ConfFlav_xi2 = np.array( list(map(lambda paraset: Moment_Sum(j, self.t, paraset), Para_xi2)) )
-            ConfFlav_xi4 = np.array( list(map(lambda paraset: Moment_Sum(j, self.t, paraset), Para_xi4)) )
-            '''
-            ConfFlav     = Moment_Sum(j, self.t, Para_Forward) 
-            ConfFlav_xi2 = Moment_Sum(j, self.t, Para_xi2)
-            '''
-            # Removing xi^4 terms
-            ConfFlav_xi4 = Moment_Sum(j, self.t, Para_xi4)
-            '''
-
-            
-            """
-            # Removing xi^4 terms
-            EvoConf_Wilson = (CWilson(j) * Moment_Evo(j, NFEFF, self.p, self.Q, ConfFlav) \
-                                + CWilson(j+2) * Moment_Evo(j+2, NFEFF, self.p, self.Q, ConfFlav_xi2) \
-                                + CWilson(j+4) * Moment_Evo(j+4, NFEFF, self.p, self.Q, ConfFlav_xi4))
-            """
-            EvoConf_Wilson = (Moment_Evo_fast(j, NFEFF, self.p, self.Q, ConfFlav) \
-                                + Moment_Evo_fast(j+2, NFEFF, self.p, self.Q, ConfFlav_xi2))
-            
-            
-            return np.einsum('j, ...j', CFF_trans, EvoConf_Wilson) 
-        '''
-        def Integrand_Mellin_Barnes_CFF_0():
-            
-
-            
-            ConfFlav     = Moment_Sum(0, self.t, Para_Forward) #(N, 5)
-            ConfFlav_xi2 = Moment_Sum(0, self.t, Para_xi2)
-            
-
-            # shape (N, 5)
-            
-            EvoConf_Wilson = (Moment_Evo_0(0, NFEFF, self.p, self.Q, ConfFlav) \
-                                + Moment_Evo_0(2, NFEFF, self.p, self.Q, ConfFlav_xi2))
-            
-            
-            return np.einsum('j, ...j', CFF_trans, EvoConf_Wilson) # shape (N)
-        '''
-        
-        def Integrand_CFF(imJ: complex):
-            # mask = (self.p==1) # assume p can only be either 1 or -1
-
-            result = np.ones_like(self.p) * self.xi ** (-reJ - 1j * imJ - 1) * Integrand_Mellin_Barnes_CFF(reJ + 1j * imJ) / 2
-
-            if self.p==1:
-                result *= (1j + np.tan((reJ + 1j * imJ) * np.pi / 2))
-            else:
-                result *= (1j - 1/np.tan((reJ + 1j * imJ) * np.pi / 2))
-            '''
-            if np.ndim(result)>0:
-                result[mask] *= (1j + np.tan((reJ + 1j * imJ) * np.pi / 2))
-                result[~mask] *= (1j - 1/np.tan((reJ + 1j * imJ) * np.pi / 2))
-            else: # scalar
-                if self.p==1:
-                    result *= (1j + np.tan((reJ + 1j * imJ) * np.pi / 2))
-                else:
-                    result *= (1j - 1/np.tan((reJ + 1j * imJ) * np.pi / 2))
-            '''
-            return result
-
-        # Adding extra j = 0 term for the axial vector CFFs
-        def CFFj0():
-
-            if self.p==1:
-                result = np.ones_like(self.p) * 0
-            else:
-                result = np.ones_like(self.p) * self.xi ** (- 1) * Integrand_Mellin_Barnes_CFF(np.array([0])) *(2)
-
-            return result
-
-        return fixed_quad(Integrand_CFF, - Max_imJ, + Max_imJ, n=500)[0] + CFFj0()
-    
-    
-    
-    def TFF(self, ParaAll, meson):
-            """
-            TFF \mathcal{F}(xi, t) (\mathcal{F} 
-            Args:
-                ParaAll = [Para_Forward, Para_xi2, Para_xi4]
-
-                Para_Forward = [Para_Forward_uV, Para_Forward_ubar, Para_Forward_dV, Para_Forward_dbar, Para_Forward_g]
-                Para_Forward_i: forward parameter sets for valence u quark (uV), sea u quark (ubar), valence d quark (dV), sea d quark (dbar) and gluon (g)
-                Para_xi2 = [Para_xi2_uV, Para_xi2_ubar, Para_xi2_dV, Para_xi2_dbar, Para_xi2_g]
-                Para_xi2_i: xi^2 parameter sets for valence u quark (uV), sea u quark (ubar), valence d quark (dV), sea d quark (dbar) and gluon (g)
-                Para_xi4 = [Para_xi4_uV, Para_xi4_ubar, Para_xi4_dV, Para_xi4_dbar, Para_xi4_g]
-                Para_xi4_i: xi^4 parameter sets for valence u quark (uV), sea u quark (ubar), valence d quark (dV), sea d quark (dbar) and gluon (g)
-                
-                meson = [1 for rho, 2 for phi, 3 for jpsi]
-            Returns:
-                TFF \mathcal{F}(xi, t)
-            """
-            #[Para_Forward, Para_xi2, Para_xi4] = ParaAll  # each (N, 5, 1, 5)
-            Para_Forward = ParaAll[..., 0, :, :, :]  # each (N, 5, 1, 5)
-            Para_xi2     = ParaAll[..., 1, :, :, :]
-            '''
-            # Removing xi^4 terms
-            Para_xi4     = ParaAll[..., 2, :, :, :]
-            '''
-
-            # The contour for Mellin-Barnes integral in terms of j not n.
-            reJ = Mellin_Barnes_intercept 
-            Max_imJ = Mellin_Barnes_cutoff 
-
-            def Integrand_Mellin_Barnes_TFF(j: complex):
-                # j is a scalar
-
-                '''
-                ConfFlav = np.array( list(map(lambda paraset: Moment_Sum(j, self.t, paraset), Para_Forward)) )
-                ConfFlav_xi2 = np.array( list(map(lambda paraset: Moment_Sum(j, self.t, paraset), Para_xi2)) )
-                ConfFlav_xi4 = np.array( list(map(lambda paraset: Moment_Sum(j, self.t, paraset), Para_xi4)) )
-                '''
-                ConfFlav     = Moment_Sum(j, self.t, Para_Forward) #(N, 5)
-                ConfFlav_xi2 = Moment_Sum(j, self.t, Para_xi2)
-                '''
-                # Removing xi^4 terms
-                ConfFlav_xi4 = Moment_Sum(j, self.t, Para_xi4)
-                '''
-
-                # shape (N, 5)
-                """
-                # Removing xi^4 terms
-                EvoConf_Wilson = (CWilson(j) * Moment_Evo(j, NFEFF, self.p, self.Q, ConfFlav) \
-                                    + CWilson(j+2) * Moment_Evo(j+2, NFEFF, self.p, self.Q, ConfFlav_xi2) \
-                                    + CWilson(j+4) * Moment_Evo(j+4, NFEFF, self.p, self.Q, ConfFlav_xi4))
-                """
-                EvoConf_Wilson = (Moment_Evo_T_fast(j, NFEFF, self.p, self.Q, ConfFlav) \
-                                    + Moment_Evo_T_fast(j+2, NFEFF, self.p, self.Q, ConfFlav_xi2))
-
-                if(meson == 1):
-                    return np.einsum('j, ...j', TFF_rho_trans, EvoConf_Wilson)
-                
-                if(meson== 2):
-                    return np.einsum('j, ...j', TFF_phi_trans, EvoConf_Wilson)
-                
-                if(meson == 3):
-                    return np.einsum('j, ...j', TFF_jpsi_trans, EvoConf_Wilson)
-                
-                
-                
-
-                #return np.einsum('j, ...j', CFF_trans, EvoConf_Wilson) # shape (N)
-
-            def Integrand_TFF(imJ: complex):
-                # mask = (self.p==1) # assume p can only be either 1 or -1
-
-                result = np.ones_like(self.p) * self.xi ** (-reJ - 1j * imJ - 1) * Integrand_Mellin_Barnes_TFF(reJ + 1j * imJ) / 2
-
-                if self.p==1:
-                    result *= (1j + np.tan((reJ + 1j * imJ) * np.pi / 2))
-                else:
-                    result *= (1j - 1/np.tan((reJ + 1j * imJ) * np.pi / 2))
-                '''
-                if np.ndim(result)>0:
-                    result[mask] *= (1j + np.tan((reJ + 1j * imJ) * np.pi / 2))
-                    result[~mask] *= (1j - 1/np.tan((reJ + 1j * imJ) * np.pi / 2))
-                else: # scalar
-                    if self.p==1:
-                        result *= (1j + np.tan((reJ + 1j * imJ) * np.pi / 2))
-                    else:
-                        result *= (1j - 1/np.tan((reJ + 1j * imJ) * np.pi / 2))
-                '''
-                return result
-
-            # Adding extra j = 0 term for the axial vector CFFs
-            def TFFj0():
-
-                if self.p==1:
-                    result = np.ones_like(self.p) * 0
-                else:
-                    result = np.ones_like(self.p) * self.xi ** (- 1) * Integrand_Mellin_Barnes_TFF(np.array([0])) *(2)
-
-                return result
-
-            return fixed_quad(Integrand_TFF, - Max_imJ, + Max_imJ, n=500)[0] + TFFj0()
-
-            '''
-            if (self.p == 1):
-                return quad_vec(lambda imJ : self.xi ** (-reJ - 1j * imJ - 1) * (1j + np.tan((reJ + 1j * imJ) * np.pi / 2)) *Integrand_Mellin_Barnes_CFF(reJ + 1j * imJ) / 2, - Max_imJ, + Max_imJ, epsrel = Prec_Goal)[0]
-            
-            if (self.p == -1):
-                return quad_vec(lambda imJ : self.xi ** (-reJ - 1j * imJ - 1) * (1j - 1/np.tan((reJ + 1j * imJ) * np.pi / 2)) *Integrand_Mellin_Barnes_CFF(reJ + 1j * imJ) / 2, - Max_imJ, + Max_imJ, epsrel = Prec_Goal)[0]
-            '''
 
     #CFF using fixed_quad
     def CFF_FOQ(self, ParaAll):
@@ -864,6 +649,128 @@ class GPDobserv (object) :
             return self.CFF_FOQ(ParaAll)
         else:
             return self.CFF_AQ(ParaAll)
+
+
+
+    
+    
+    
+    def TFF(self, ParaAll, meson):
+            """
+            TFF \mathcal{F}(xi, t) (\mathcal{F} 
+            Args:
+                ParaAll = [Para_Forward, Para_xi2, Para_xi4]
+
+                Para_Forward = [Para_Forward_uV, Para_Forward_ubar, Para_Forward_dV, Para_Forward_dbar, Para_Forward_g]
+                Para_Forward_i: forward parameter sets for valence u quark (uV), sea u quark (ubar), valence d quark (dV), sea d quark (dbar) and gluon (g)
+                Para_xi2 = [Para_xi2_uV, Para_xi2_ubar, Para_xi2_dV, Para_xi2_dbar, Para_xi2_g]
+                Para_xi2_i: xi^2 parameter sets for valence u quark (uV), sea u quark (ubar), valence d quark (dV), sea d quark (dbar) and gluon (g)
+                Para_xi4 = [Para_xi4_uV, Para_xi4_ubar, Para_xi4_dV, Para_xi4_dbar, Para_xi4_g]
+                Para_xi4_i: xi^4 parameter sets for valence u quark (uV), sea u quark (ubar), valence d quark (dV), sea d quark (dbar) and gluon (g)
+                
+                meson = [1 for rho, 2 for phi, 3 for jpsi]
+            Returns:
+                TFF \mathcal{F}(xi, t)
+            """
+            #[Para_Forward, Para_xi2, Para_xi4] = ParaAll  # each (N, 5, 1, 5)
+            Para_Forward = ParaAll[..., 0, :, :, :]  # each (N, 5, 1, 5)
+            Para_xi2     = ParaAll[..., 1, :, :, :]
+            '''
+            # Removing xi^4 terms
+            Para_xi4     = ParaAll[..., 2, :, :, :]
+            '''
+
+            # The contour for Mellin-Barnes integral in terms of j not n.
+            reJ = Mellin_Barnes_intercept 
+            Max_imJ = Mellin_Barnes_cutoff 
+
+            def Integrand_Mellin_Barnes_TFF(j: complex):
+                # j is a scalar
+
+                '''
+                ConfFlav = np.array( list(map(lambda paraset: Moment_Sum(j, self.t, paraset), Para_Forward)) )
+                ConfFlav_xi2 = np.array( list(map(lambda paraset: Moment_Sum(j, self.t, paraset), Para_xi2)) )
+                ConfFlav_xi4 = np.array( list(map(lambda paraset: Moment_Sum(j, self.t, paraset), Para_xi4)) )
+                '''
+                ConfFlav     = Moment_Sum(j, self.t, Para_Forward) #(N, 5)
+                ConfFlav_xi2 = Moment_Sum(j, self.t, Para_xi2)
+                '''
+                # Removing xi^4 terms
+                ConfFlav_xi4 = Moment_Sum(j, self.t, Para_xi4)
+                '''
+
+                # shape (N, 5)
+                """
+                # Removing xi^4 terms
+                EvoConf_Wilson = (CWilson(j) * Moment_Evo(j, NFEFF, self.p, self.Q, ConfFlav) \
+                                    + CWilson(j+2) * Moment_Evo(j+2, NFEFF, self.p, self.Q, ConfFlav_xi2) \
+                                    + CWilson(j+4) * Moment_Evo(j+4, NFEFF, self.p, self.Q, ConfFlav_xi4))
+                """
+                EvoConf_Wilson = (Moment_Evo_T_fast(j, NFEFF, self.p, self.Q, ConfFlav) \
+                                    + Moment_Evo_T_fast(j+2, NFEFF, self.p, self.Q, ConfFlav_xi2))
+
+                if(meson == 1):
+                    return np.einsum('j, ...j', TFF_rho_trans, EvoConf_Wilson)
+                
+                if(meson== 2):
+                    return np.einsum('j, ...j', TFF_phi_trans, EvoConf_Wilson)
+                
+                if(meson == 3):
+                    return np.einsum('j, ...j', TFF_jpsi_trans, EvoConf_Wilson)
+                
+                
+                
+
+                #return np.einsum('j, ...j', CFF_trans, EvoConf_Wilson) # shape (N)
+
+            def Integrand_TFF(imJ: complex):
+                # mask = (self.p==1) # assume p can only be either 1 or -1
+
+                result = np.ones_like(self.p) * self.xi ** (-reJ - 1j * imJ - 1) * Integrand_Mellin_Barnes_TFF(reJ + 1j * imJ) / 2
+
+                if self.p==1:
+                    result *= (1j + np.tan((reJ + 1j * imJ) * np.pi / 2))
+                else:
+                    result *= (1j - 1/np.tan((reJ + 1j * imJ) * np.pi / 2))
+                '''
+                if np.ndim(result)>0:
+                    result[mask] *= (1j + np.tan((reJ + 1j * imJ) * np.pi / 2))
+                    result[~mask] *= (1j - 1/np.tan((reJ + 1j * imJ) * np.pi / 2))
+                else: # scalar
+                    if self.p==1:
+                        result *= (1j + np.tan((reJ + 1j * imJ) * np.pi / 2))
+                    else:
+                        result *= (1j - 1/np.tan((reJ + 1j * imJ) * np.pi / 2))
+                '''
+                return result
+
+            # Adding extra j = 0 term for the axial vector CFFs
+            def TFFj0():
+
+                if self.p==1:
+                    result = np.ones_like(self.p) * 0
+                else:
+                    result = np.ones_like(self.p) * self.xi ** (- 1) * Integrand_Mellin_Barnes_TFF(np.array([0])) *(2)
+
+                return result
+            
+
+            if FOQ == 1:
+                # In this case, the function only accepts scalar input.
+                assert(np.ndim(self.x)==0 and np.ndim(self.xi)==0 and np.ndim(self.t)==0) # making sure they are scalars
+                assert(np.ndim(self.Q)==0 and np.ndim(self.p)==0) # making sure they are scalars
+                return fixed_quad(Integrand_TFF, - Max_imJ, + Max_imJ, n=nFOQ)[0] + TFFj0()
+            else:
+                return quad_vec(Integrand_TFF, - Max_imJ, + Max_imJ, epsrel = Prec_Goal)[0] + TFFj0()
+            
+
+            '''
+            if (self.p == 1):
+                return quad_vec(lambda imJ : self.xi ** (-reJ - 1j * imJ - 1) * (1j + np.tan((reJ + 1j * imJ) * np.pi / 2)) *Integrand_Mellin_Barnes_CFF(reJ + 1j * imJ) / 2, - Max_imJ, + Max_imJ, epsrel = Prec_Goal)[0]
+            
+            if (self.p == -1):
+                return quad_vec(lambda imJ : self.xi ** (-reJ - 1j * imJ - 1) * (1j - 1/np.tan((reJ + 1j * imJ) * np.pi / 2)) *Integrand_Mellin_Barnes_CFF(reJ + 1j * imJ) / 2, - Max_imJ, + Max_imJ, epsrel = Prec_Goal)[0]
+            '''
 
     def GPD(self, flv, ParaAll):
         """
